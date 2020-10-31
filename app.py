@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from datetime import timedelta
+import create_ff_standings
 
 def pull_data(year, league_id=0, dict_params=None):
     """ Returns a JSON object containing the data pulled APIs url """
@@ -436,10 +437,7 @@ def return_current_standings(week_number):
 
 def get_standings(week_number):
     ''' Create table used in the dashboard '''
-    df_current_standings = return_current_standings(week_number)[1]
-    # df_current_standings = df_current_standings[['week_number', 'full_name', 'standings',
-    #                                              'cum_total_wins', 'score', 'all_play_wins', 'cum_score',
-    #                                              'cum_all_play_wins', 'manual_nickname']]
+    df_current_standings = create_ff_standings.return_current_standings(week_number)[1]
 
     dict_columns_to_rename = {'standings': 'Rank', 'manual_nickname': 'Team',
                               'cum_wins': 'Wins', 'cum_losses': 'Losses', 'cum_ties': 'Ties',

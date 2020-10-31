@@ -429,26 +429,26 @@ def return_current_standings(week_number):
 
     return (df_final, df_current_standings)
 
+if __name__ == 'main':
+    week_number = 7
 
-week_number = 7
+    pd.options.display.max_columns = None
+    pd.options.display.width = None
 
-pd.options.display.max_columns = None
-pd.options.display.width = None
+    df_current_standings = return_current_standings(week_number)[1]
 
-df_current_standings = return_current_standings(week_number)[1]
+    df_final = return_current_standings(week_number)[0]
 
-df_final = return_current_standings(week_number)[0]
+    print(df_current_standings)
 
-print(df_current_standings)
+    remaining_teams, losing_team = survivor_challenge(df_final, week_number)
+    print(losing_team)
+    print(remaining_teams)
 
-remaining_teams, losing_team = survivor_challenge(df_final, week_number)
-print(losing_team)
-print(remaining_teams)
+    print(df_final.columns)
 
-print(df_final.columns)
+    file_dir = '/home/cdelong/python_projects/ff_web_app/\
+    delt_ff_standings/weekly_standings_csvs/Delt_2020_Week' + str(week_number) + '_Standings.csv'
 
-file_dir = '/home/cdelong/python_projects/ff_web_app/\
-delt_ff_standings/weekly_standings_csvs/Delt_2020_Week' + str(week_number) + '_Standings.csv'
-
-# Creates a csv of the current standings
-# df_current_standings.to_csv(file_dir)
+    # Creates a csv of the current standings
+    # df_current_standings.to_csv(file_dir)
