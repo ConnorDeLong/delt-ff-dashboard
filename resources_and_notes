@@ -11,3 +11,5 @@ Dash Deployment Instructions (from main dash site): https://dash.plotly.com/depl
                intially (copied and pasted this later)
         d) <app>.py
             1. Seems like a server variable that references the "app.server" attribute is needed
+            
+Dash Deployment - Main instructions I've used: https://shravan-kuchkula.github.io/nyc-airbnb-deploy-to-heroku/#8-run-heroku-login 
