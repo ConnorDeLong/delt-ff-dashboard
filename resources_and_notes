@@ -1,6 +1,8 @@
 Basic Github stuff (add, push, commit, and push steps): https://readwrite.com/2013/10/02/github-for-beginners-part-2/
     - "git push origin <branch>" to push to a particular branch?
     
+General article on deploying to Heroku: https://towardsdatascience.com/how-to-deploy-your-dash-app-with-heroku-a4ecd25a6205
+    
 Dash Deployment Instructions (from main dash site): https://dash.plotly.com/deployment
     - There are 4 files necessary for the app to run
         a) .gitignore
