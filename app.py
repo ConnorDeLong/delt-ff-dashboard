@@ -459,6 +459,8 @@ def get_standings(week_number):
                                     + "-" + df_current_standings['Losses'].astype(str) \
                                     + "-" + df_current_standings['Ties'].astype(str)
 
+    df_current_standings['Points Scored'] = df_current_standings['Points Scored'].round(decimals=2)
+
     df_current_standings = df_current_standings[['Rank', 'Team', 'W-L-T', 'Points Scored', 'All Play Wins']]
 
     return df_current_standings
@@ -494,3 +496,4 @@ app.layout = dash_table.DataTable(
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
