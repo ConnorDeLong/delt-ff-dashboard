@@ -1,3 +1,13 @@
 Basic Github stuff (add, push, commit, and push steps): https://readwrite.com/2013/10/02/github-for-beginners-part-2/
-
-"git push origin <branch>" to push to a particular branch?
+    - "git push origin <branch>" to push to a particular branch?
+    
+Dash Deployment Instructions (from main dash site): https://dash.plotly.com/deployment
+    - There are 4 files necessary for the app to run
+        a) .gitignore
+            1. topline of this file says "venv" - I think this just means to put the name of the virtual environment
+        b) Procfile
+        c) requirements.txt
+            1. Used "pip freeze > requirements.txt" in command line with the virtual env activated to create this
+               intially (copied and pasted this later)
+        d) <app>.py
+            1. Seems like a server variable that references the "app.server" attribute is needed
