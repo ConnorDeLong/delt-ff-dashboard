@@ -45,6 +45,8 @@ df_current_standings = get_standings(7)
 
 app = dash.Dash(__name__)
 
+server = app.server
+
 app.layout = dash_table.DataTable(
     id='table'
     , columns=[{"name": i, "id": i} for i in df_current_standings.columns]
