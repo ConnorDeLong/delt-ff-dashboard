@@ -2,8 +2,6 @@
 import requests
 import pandas as pd
 import numpy as np
-from datetime import datetime
-from datetime import timedelta
 
 def pull_data(year, league_id=0, dict_params=None):
     """ Returns a JSON object containing the data pulled APIs url """
@@ -267,7 +265,6 @@ def add_standings(matchup_data, week_number,
 
     return df_matchup_data_stacked
 
-
 def add_all_standings(df_matchup_data, number_of_weeks=13,
                       rank_metrics_by_week_range={'1-12': [['cum_total_wins', 'cum_score'],
                                                            [False, False]]}):
@@ -323,26 +320,8 @@ def survivor_challenge(df_matchup_data, week_number):
 
     return (df_remaining_teams, survivor_loser)
 
-def create_week_number_dates(str_first_prelim_date='9/15/2020'):
-    '''
-    - Returns dictionary containing the week numbers (value) associated with their
-      first day of valid rankings
-    - Intending to use this as a way to update the app with the appropriate week
-    '''
-    week_number_dates_dict = {}
-
-    date_prelim_date = datetime.strptime(str_first_prelim_date, "%m/%d/%Y").date()
-    for week_number in range(1, 14):
-        str_prelim_date = date_prelim_date.strftime("%m/%d/%Y")
-        week_number_dates_dict[str_prelim_date] = week_number
-
-        date_prelim_date += timedelta(days=7)
-
-    return week_number_dates_dict
-
-
-def return_current_standings(week_number):
-    """ return current standings given week number and standings through all current weeks available """
+def create_final_standings():
+    """ return standings through all current weeks available and current standings"""
     # Create dicionary containing the primary team attributes
     teamId_dict = {
         '2019': [
@@ -380,6 +359,7 @@ def return_current_standings(week_number):
         , 'all_play_losses': 'cum_all_play_losses', 'tie_ind': 'cum_ties'
         , 'loss_ind': 'cum_losses', 'total_wins': 'cum_total_wins'}
 
+    # Set the ranking system of the league
     rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]]
         , '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]]
         , '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
@@ -394,13 +374,10 @@ def return_current_standings(week_number):
     team_df_all_seasons = pd.concat([team_df_2019, team_df_2020])
 
     # Create several different JSON objects containing different pulls from the ESPN API
-    main_data_2019 = pull_data(2019, league_id=48347143)
-
-    matchup_data_2019 = pull_data(2019, league_id=48347143,
-                                  dict_params={"view": "mMatchup"})
     matchup_data_2020 = pull_data(2020, league_id=48347143,
                                   dict_params={"view": "mMatchup"})
 
+    # Unecessary for this, but keeping here for any future projects
     # player_info_2020 = pull_data(2019, league_id=48347143,
     #                              dict_params={"view": "kona_player_info"})
     # pro_team_info_2020 = pull_data(2020,
@@ -420,24 +397,20 @@ def return_current_standings(week_number):
     df_matchup_data_w_team = merge_on_team_data(df_matchup_data_w_cum, team_df)
     df_final = add_all_standings(df_matchup_data_w_team, rank_metrics_by_week_range=rank_metrics_by_week_range)
 
-    df_current_standings = df_final[['week_number', 'full_name', 'standings', 'cum_total_wins','score',
-           'all_play_wins', 'cum_score', 'cum_all_play_wins',
-            'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']].loc[df_final['week_number'] == week_number]
+    return df_final
 
-    # df_final[['week_number', 'full_name', 'standings', 'score',
-    #           'cum_total_wins', 'cum_score', 'cum_all_play_wins', 'manual_nickname']]
-
-    return (df_final, df_current_standings)
-
-if __name__ == 'main':
+if __name__ == '__main__':
+    ''' This mainly just checks the data that was created '''
     week_number = 7
 
     pd.options.display.max_columns = None
     pd.options.display.width = None
 
-    df_current_standings = return_current_standings(week_number)[1]
+    df_final = create_final_standings()
 
-    df_final = return_current_standings(week_number)[0]
+    df_current_standings = df_final[['week_number', 'full_name', 'standings',
+            'cum_total_wins','score','all_play_wins', 'cum_score', 'cum_all_play_wins',
+            'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']].loc[df_final['week_number'] == week_number]
 
     print(df_current_standings)
 
