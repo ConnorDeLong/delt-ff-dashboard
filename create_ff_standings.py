@@ -200,7 +200,6 @@ def merge_on_team_data(matchup_data, team_df):
 
     return matchup_data
 
-
 def add_standings(matchup_data, week_number,
                   rank_metrics_by_week_range={'1-12': [['cum_total_wins', 'cum_score'],
                                                        [False, False]]}):
@@ -341,94 +340,105 @@ def create_week_number_dates(str_first_prelim_date='9/15/2020'):
 
     return week_number_dates_dict
 
-# Create dicionary containing the primary team attributes
-teamId_dict = {
-    '2019': [
-        [1, "Connor DeLong", "DeLong"],
-        [2, "Shawn Fulford", "Fulfi"],
-        [3, "Kevin Perelstein", "K-Train"],
-        [4, "Mario Bynum", "Mario"],
-        [5, "Brendan Elliot", "Brendan"],
-        [6, "Josh Nadeau", "Germany"],
-        [7, "Keith Kaplan", "Keith"],
-        [8, "Jonathan Kaunert", "Jon"],
-        [9, "Brock Corsi", "Brock"],
-        [10, "Travis Hohman", "Travis"],
-        [11, "Keanu Hines", "Keanu"],
-        [12, "Matt Fleisher", "Fleish"]
-],
-    '2020': [
-        [1, "Connor DeLong", "DeLong"],
-        [2, "Shawn Fulford", "Fulfi"],
-        [3, "Kevin Perelstein", "K-Train"],
-        [4, "Mario Bynum", "Mario"],
-        [5, "Brian Solomon", "Solomon"],
-        [6, "Josh Nadeau", "Germany"],
-        [7, "Keith Kaplan", "Keith"],
-        [8, "Jonathan Kaunert", "Jon"],
-        [9, "Alex Darr", "Darr"],
-        [10, "Travis Hohman", "Travis"],
-        [11, "Keanu Hines", "Keanu"],
-        [12, "Matt Fleisher", "Fleish"]
-    ]
-}
 
-# Dictionary containing the metrics that will be transformed as cumulative totals by team across weeks
-cum_dictionary = {'score': 'cum_score', 'win_ind': 'cum_wins', 'all_play_wins': 'cum_all_play_wins'
-    , 'all_play_losses': 'cum_all_play_losses', 'tie_ind': 'cum_ties'
-    , 'loss_ind': 'cum_losses', 'total_wins': 'cum_total_wins'}
+def return_current_standings(week_number):
+    """ return current standings given week number and standings through all current weeks available """
+    # Create dicionary containing the primary team attributes
+    teamId_dict = {
+        '2019': [
+            [1, "Connor DeLong", "DeLong"],
+            [2, "Shawn Fulford", "Fulfi"],
+            [3, "Kevin Perelstein", "K-Train"],
+            [4, "Mario Bynum", "Mario"],
+            [5, "Brendan Elliot", "Brendan"],
+            [6, "Josh Nadeau", "Germany"],
+            [7, "Keith Kaplan", "Keith"],
+            [8, "Jonathan Kaunert", "Jon"],
+            [9, "Brock Corsi", "Brock"],
+            [10, "Travis Hohman", "Travis"],
+            [11, "Keanu Hines", "Keanu"],
+            [12, "Matt Fleisher", "Fleish"]
+        ],
+        '2020': [
+            [1, "Connor DeLong", "DeLong"],
+            [2, "Shawn Fulford", "Fulfi"],
+            [3, "Kevin Perelstein", "K-Train"],
+            [4, "Mario Bynum", "Mario"],
+            [5, "Brian Solomon", "Solomon"],
+            [6, "Josh Nadeau", "Germany"],
+            [7, "Keith Kaplan", "Keith"],
+            [8, "Jonathan Kaunert", "Jon"],
+            [9, "Alex Darr", "Darr"],
+            [10, "Travis Hohman", "Travis"],
+            [11, "Keanu Hines", "Keanu"],
+            [12, "Matt Fleisher", "Fleish"]
+        ]
+    }
 
-rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]]
-    , '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]]
-    , '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+    # Dictionary containing the metrics that will be transformed as cumulative totals by team across weeks
+    cum_dictionary = {'score': 'cum_score', 'win_ind': 'cum_wins', 'all_play_wins': 'cum_all_play_wins'
+        , 'all_play_losses': 'cum_all_play_losses', 'tie_ind': 'cum_ties'
+        , 'loss_ind': 'cum_losses', 'total_wins': 'cum_total_wins'}
 
-# Create dataframe versions of the 2019 and 2020 team dictionaries
-team_df_2019 = pd.DataFrame(teamId_dict['2019'], columns=['teamId', 'full_name', 'manual_nickname'])
-team_df_2019['seasonId'] = 2019
+    rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]]
+        , '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]]
+        , '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
 
-team_df_2020 = pd.DataFrame(teamId_dict['2020'], columns=['teamId', 'full_name', 'manual_nickname'])
-team_df_2020['seasonId'] = 2020
+    # Create dataframe versions of the 2019 and 2020 team dictionaries
+    team_df_2019 = pd.DataFrame(teamId_dict['2019'], columns=['teamId', 'full_name', 'manual_nickname'])
+    team_df_2019['seasonId'] = 2019
 
-team_df_all_seasons = pd.concat([team_df_2019, team_df_2020])
+    team_df_2020 = pd.DataFrame(teamId_dict['2020'], columns=['teamId', 'full_name', 'manual_nickname'])
+    team_df_2020['seasonId'] = 2020
 
-# Create several different JSON objects containing different pulls from the ESPN API
-main_data_2019 = pull_data(2019, league_id=48347143)
+    team_df_all_seasons = pd.concat([team_df_2019, team_df_2020])
 
-matchup_data_2019 = pull_data(2019, league_id=48347143,
-                              dict_params={"view": "mMatchup"})
-matchup_data_2020 = pull_data(2020, league_id=48347143,
-                              dict_params={"view": "mMatchup"})
+    # Create several different JSON objects containing different pulls from the ESPN API
+    main_data_2019 = pull_data(2019, league_id=48347143)
 
-# player_info_2020 = pull_data(2019, league_id=48347143,
-#                              dict_params={"view": "kona_player_info"})
-# pro_team_info_2020 = pull_data(2020,
-#                                dict_params={"view": "proTeamSchedules_wl"})
+    matchup_data_2019 = pull_data(2019, league_id=48347143,
+                                  dict_params={"view": "mMatchup"})
+    matchup_data_2020 = pull_data(2020, league_id=48347143,
+                                  dict_params={"view": "mMatchup"})
 
-# Create global variables consisting of the primary datasets to use below
-# Note: There's probably a better way to go about this
-choose_data = matchup_data_2020.copy()
-team_df = team_df_2020.copy()
+    # player_info_2020 = pull_data(2019, league_id=48347143,
+    #                              dict_params={"view": "kona_player_info"})
+    # pro_team_info_2020 = pull_data(2020,
+    #                                dict_params={"view": "proTeamSchedules_wl"})
 
-# Run through the processing steps to create the final Team/Week level dataframe
-df_matchup_data = create_matchup_df(choose_data)
-df_expanded_matchup = expand_matchup_data(df_matchup_data)
-df_matchup_data_w_wl = add_win_loss_ind(df_expanded_matchup)
-df_matchup_data_w_all_play = add_all_play(df_matchup_data_w_wl)
-df_matchup_data_w_cum = add_cum_metrics(df_matchup_data_w_all_play, cum_dictionary)
-df_matchup_data_w_team = merge_on_team_data(df_matchup_data_w_cum, team_df)
-df_final = add_all_standings(df_matchup_data_w_team, rank_metrics_by_week_range=rank_metrics_by_week_range)
+    # Create global variables consisting of the primary datasets to use below
+    # Note: There's probably a better way to go about this
+    choose_data = matchup_data_2020.copy()
+    team_df = team_df_2020.copy()
 
-week_number = 4
+    # Run through the processing steps to create the final Team/Week level dataframe
+    df_matchup_data = create_matchup_df(choose_data)
+    df_expanded_matchup = expand_matchup_data(df_matchup_data)
+    df_matchup_data_w_wl = add_win_loss_ind(df_expanded_matchup)
+    df_matchup_data_w_all_play = add_all_play(df_matchup_data_w_wl)
+    df_matchup_data_w_cum = add_cum_metrics(df_matchup_data_w_all_play, cum_dictionary)
+    df_matchup_data_w_team = merge_on_team_data(df_matchup_data_w_cum, team_df)
+    df_final = add_all_standings(df_matchup_data_w_team, rank_metrics_by_week_range=rank_metrics_by_week_range)
 
-df_current_standings = df_final[['week_number', 'full_name', 'standings', 'cum_total_wins','score',
-       'all_play_wins', 'cum_score', 'cum_all_play_wins',
-        'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']].loc[df_final['week_number'] == week_number]
+    df_current_standings = df_final[['week_number', 'full_name', 'standings', 'cum_total_wins','score',
+           'all_play_wins', 'cum_score', 'cum_all_play_wins',
+            'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']].loc[df_final['week_number'] == week_number]
 
-# df_final[['week_number', 'full_name', 'standings', 'score',
-#           'cum_total_wins', 'cum_score', 'cum_all_play_wins', 'manual_nickname']]
+    # df_final[['week_number', 'full_name', 'standings', 'score',
+    #           'cum_total_wins', 'cum_score', 'cum_all_play_wins', 'manual_nickname']]
+
+    return (df_final, df_current_standings)
+
+
+week_number = 7
 
 pd.options.display.max_columns = None
 pd.options.display.width = None
+
+df_current_standings = return_current_standings(week_number)[1]
+
+df_final = return_current_standings(week_number)[0]
+
 print(df_current_standings)
 
 remaining_teams, losing_team = survivor_challenge(df_final, week_number)
