@@ -38,7 +38,7 @@ def get_standings(week_number):
 
     return df_current_standings
 
-df_current_standings = get_standings(4)
+df_current_standings = get_standings(7)
 
 # Points against? need to add cum of score_opp
 # print(df_current_standings)
