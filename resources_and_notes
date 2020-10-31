@@ -6,6 +6,7 @@ Dash Deployment Instructions (from main dash site): https://dash.plotly.com/depl
         a) .gitignore
             1. topline of this file says "venv" - I think this just means to put the name of the virtual environment
         b) Procfile
+            1. Does "app" in "app:server" refer to the name of the app file?
         c) requirements.txt
             1. Used "pip freeze > requirements.txt" in command line with the virtual env activated to create this
                intially (copied and pasted this later)
