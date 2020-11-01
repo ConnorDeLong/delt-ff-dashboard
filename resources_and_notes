@@ -18,4 +18,8 @@ Dash Deployment Instructions (from main dash site): https://dash.plotly.com/depl
 Dash Deployment - Main instructions I've used: https://shravan-kuchkula.github.io/nyc-airbnb-deploy-to-heroku/#8-run-heroku-login
 
 Make changes to an existing app: https://devcenter.heroku.com/articles/git
-    - use "heroku git:remote -a <app>" to estalish connection with the app and make changes to it?
+    - use "heroku git:remote -a <app>" to estalish connection with the app and push changes to it?
+    
+Miscellaneous notes:
+    - Make sure the "app.run_server" code is the ONLY portion that is under the "if __name__ ..." block. I had everything under this
+      originally and it kept causing H13 errors when launching because it couldn't find the "server" variable
