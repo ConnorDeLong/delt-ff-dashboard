@@ -38,33 +38,33 @@ def get_current_standings(week_number):
 
     return df_current_standings
 
+for_week_number = get_current_week_number()
+# for_week_number = 7
+
+df_current_standings = get_current_standings(for_week_number)
+
+app = dash.Dash(__name__)
+
+server = app.server
+
+app.layout = dash_table.DataTable(
+    id='table'
+    , columns=[{"name": i, "id": i} for i in df_current_standings.columns]
+    , data=df_current_standings.to_dict('records')
+    , style_cell={'textAlign': 'center', 'padding': '5px'}
+    , style_header={
+        'backgroundColor': 'grey'
+        , 'fontWeight': 'bold'
+    }
+    # , style_cell_conditional=[
+    #     {
+    #         'if': {'column_id': 'Rank'},
+    #         'textAlign': 'center'
+    #     }
+    # ]
+    # , style_as_list_view=True
+)
+
 if __name__ == '__main__':
-    # for_week_number = get_current_week_number()
-    for_week_number = 7
-
-    df_current_standings = get_current_standings(for_week_number)
-
-    app = dash.Dash(__name__)
-
-    server = app.server
-
-    app.layout = dash_table.DataTable(
-        id='table'
-        , columns=[{"name": i, "id": i} for i in df_current_standings.columns]
-        , data=df_current_standings.to_dict('records')
-        , style_cell={'textAlign': 'center', 'padding': '5px'}
-        , style_header={
-            'backgroundColor': 'grey'
-            , 'fontWeight': 'bold'
-        }
-        # , style_cell_conditional=[
-        #     {
-        #         'if': {'column_id': 'Rank'},
-        #         'textAlign': 'center'
-        #     }
-        # ]
-        # , style_as_list_view=True
-    )
-
     app.run_server(debug=True)
 
