@@ -39,7 +39,8 @@ def get_current_standings(week_number):
     return df_current_standings
 
 if __name__ == '__main__':
-    for_week_number = get_current_week_number()
+    # for_week_number = get_current_week_number()
+    for_week_number = 7
 
     df_current_standings = get_current_standings(for_week_number)
 
