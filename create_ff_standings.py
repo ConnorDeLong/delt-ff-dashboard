@@ -29,6 +29,7 @@ def pull_data(year, league_id=0, dict_params=None):
 
     return d
 
+
 def create_matchup_df(matchup_data, playoff_week_start=14):
     """ Returns a week/matchup level dataframe containing the total scores of each team
         Note that this requires the mMatchup filtered data
@@ -67,6 +68,7 @@ def create_matchup_df(matchup_data, playoff_week_start=14):
                                for w in df_matchup['week_number']]
 
     return df_matchup
+
 
 def expand_matchup_data(matchup_data):
     """ Expands data to the week/team level """
@@ -134,6 +136,7 @@ def add_win_loss_ind(matchup_data):
 
     return matchup_data
 
+
 def add_all_play(matchup_data):
     """
     Returns Week/Team level dataframe with all play wins and losses added
@@ -197,6 +200,7 @@ def merge_on_team_data(matchup_data, team_df):
     matchup_data.sort_values(by=['week_number', 'teamId'], inplace=True, ascending=True)
 
     return matchup_data
+
 
 def add_standings(matchup_data, week_number,
                   rank_metrics_by_week_range={'1-12': [['cum_total_wins', 'cum_score'],
@@ -265,6 +269,7 @@ def add_standings(matchup_data, week_number,
 
     return df_matchup_data_stacked
 
+
 def add_all_standings(df_matchup_data, number_of_weeks=13,
                       rank_metrics_by_week_range={'1-12': [['cum_total_wins', 'cum_score'],
                                                            [False, False]]}):
@@ -290,6 +295,7 @@ def add_all_standings(df_matchup_data, number_of_weeks=13,
     df_matchup_data_stacked.reset_index(inplace=True, drop=True)
 
     return df_matchup_data_stacked
+
 
 def survivor_challenge(df_matchup_data, week_number):
     """
@@ -319,6 +325,7 @@ def survivor_challenge(df_matchup_data, week_number):
         df_remaining_teams = df_remaining_teams.loc[df_remaining_teams != survivor_loser]
 
     return (df_remaining_teams, survivor_loser)
+
 
 def create_final_standings():
     """ return standings through all current weeks available and current standings"""
