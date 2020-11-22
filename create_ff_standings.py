@@ -34,7 +34,6 @@ def create_matchup_df(matchup_data, playoff_week_start=14):
     """ Returns a week/matchup level dataframe containing the total scores of each team
         Note that this requires the mMatchup filtered data
     """
-
     data = []
 
     for i, matchup_dict in enumerate(matchup_data['schedule']):
@@ -148,23 +147,37 @@ def add_all_play(matchup_data):
     # Get the week_number/scores freq and sort in ascending order (lowest score to highest)
     # Note that this will allow for a more robust calculation for ties given that all ties in a given
     # week will be grouped together
-    get_size = matchup_data.groupby(['week_number', 'score'], as_index=False).size()
-    get_size.sort_values(by=['week_number', 'score'], inplace=True, ascending=True)
+    unique_week_scores = matchup_data.groupby(['week_number', 'score'], as_index=False).size()
+    unique_week_scores.sort_values(by=['week_number', 'score'], inplace=True, ascending=True)
 
     # Create the cumulative sum of the week_number/scores freq
     # (i.e. number of scores the ith score beats + the number of i scores)
-    get_size['cum_sum'] = get_size.groupby(['week_number'])['size'].cumsum()
+    unique_week_scores['cum_sum'] = unique_week_scores.groupby(['week_number'])['size'].cumsum()
 
     # create variable that accounts for ties - if no ties, then 0. Otherwise, 1/number of likewise scores
-    get_size['add_tie_amount'] = 0
-    get_size.loc[get_size['size'] > 1, 'add_tie_amount'] = 1 / get_size['size']
-    get_size['all_play_wins'] = get_size['cum_sum'] - get_size['size'] + get_size['add_tie_amount']
+    unique_week_scores['add_tie_amount'] = 0
+    unique_week_scores.loc[unique_week_scores['size'] > 1, 'add_tie_amount'] = 1 / unique_week_scores['size']
+    unique_week_scores['all_play_wins'] = unique_week_scores['cum_sum'] - \
+                                          unique_week_scores['size'] + \
+                                          unique_week_scores['add_tie_amount']
 
+    # Get the actual number of all play wins EXCLUDING ties
+    unique_week_scores['all_play_wins_int'] = unique_week_scores['cum_sum'] - \
+                                              unique_week_scores['size']
+
+    # Get the actual number of ties
+    unique_week_scores['all_play_ties_int'] = unique_week_scores['size'] - 1
+
+    keep_vars_for_merge = ['week_number', 'score', 'all_play_wins', 'all_play_wins_int', 'all_play_ties_int']
     # merge all_play_wins onto main dataset and add all_play_losses
-    matchup_data = pd.merge(matchup_data, get_size[['week_number', 'score', 'all_play_wins']],
+    matchup_data = pd.merge(matchup_data, unique_week_scores[keep_vars_for_merge],
                             on=['week_number', 'score'], how='outer')
 
     matchup_data['all_play_losses'] = number_of_teams - matchup_data['all_play_wins'] - 1
+    matchup_data['all_play_losses_int'] = number_of_teams - \
+                                          matchup_data['all_play_wins_int'] - \
+                                          matchup_data['all_play_ties_int'] - 1
+
     matchup_data.sort_values(by=['week_number', 'teamId'], inplace=True, ascending=True)
 
     return matchup_data
@@ -202,15 +215,16 @@ def merge_on_team_data(matchup_data, team_df):
     return matchup_data
 
 
-def add_standings(matchup_data, week_number,
-                  rank_metrics_by_week_range={'1-12': [['cum_total_wins', 'cum_score'],
-                                                       [False, False]]}):
+def add_standings(matchup_data, week_number, rank_metrics_by_week_range=None):
     """
     Returns one week of team level data that includes the standings for that week
     @type week_number: Dictionary
     @param matchup_data: matchup data
     @type rank_metrics_by_week_range: Dictionary
     """
+    if rank_metrics_by_week_range is None:
+        rank_metrics_by_week_range = {'1-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+
     # filter matchup_data on the week_number of interest
     matchup_data = matchup_data.copy()
     matchup_data = matchup_data.loc[matchup_data['week_number'] == week_number]
@@ -270,13 +284,14 @@ def add_standings(matchup_data, week_number,
     return df_matchup_data_stacked
 
 
-def add_all_standings(df_matchup_data, number_of_weeks=13,
-                      rank_metrics_by_week_range={'1-12': [['cum_total_wins', 'cum_score'],
-                                                           [False, False]]}):
+def add_all_standings(df_matchup_data, number_of_weeks=13, rank_metrics_by_week_range=None):
     """
     Returns Week/Team level dataframe that includes week level standings
     @type rank_metrics_by_week_range: dictonary
     """
+    if rank_metrics_by_week_range is None:
+        rank_metrics_by_week_range = {'1-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+
     df_matchup_data = df_matchup_data.copy()
 
     # get the column names into a list and add 'rank'
@@ -295,6 +310,35 @@ def add_all_standings(df_matchup_data, number_of_weeks=13,
     df_matchup_data_stacked.reset_index(inplace=True, drop=True)
 
     return df_matchup_data_stacked
+
+def add_update_additional_metrics(df_matchup_data):
+    """ Returns Week/Team level dataframe with additional metrics specified below added to it """
+
+    df_matchup_data = df_matchup_data.copy()
+    df_matchup_data['cum_wlt'] = df_matchup_data['cum_wins'].astype(str) \
+                                    + "-" + df_matchup_data['cum_losses'].astype(str) \
+                                    + "-" + df_matchup_data['cum_ties'].astype(str)
+
+    df_matchup_data['cum_all_play_wlt_int'] = df_matchup_data['cum_all_play_wins_int'].astype(str) \
+                                             + "-" + df_matchup_data['cum_all_play_losses_int'].astype(str) \
+                                             + "-" + df_matchup_data['cum_all_play_ties_int'].astype(str)
+
+    df_matchup_data['cum_score'] = df_matchup_data['cum_score'].round(decimals=2)
+    df_matchup_data['cum_score_opp'] = df_matchup_data['cum_score_opp'].round(decimals=2)
+
+    df_matchup_data['cum_score_per_week'] = df_matchup_data['cum_score'] / df_matchup_data['week_number']
+    df_matchup_data['cum_score_per_week'] = df_matchup_data['cum_score_per_week'].round(decimals=2)
+
+    df_matchup_data['cum_score_opp_per_week'] = df_matchup_data['cum_score'] / df_matchup_data['week_number']
+    df_matchup_data['cum_score_opp_per_week'] = df_matchup_data['cum_score_opp_per_week'].round(decimals=2)
+
+
+
+    df_matchup_data['cum_all_play_wins_per_week'] = df_matchup_data['cum_all_play_wins'] / \
+                                                    df_matchup_data['week_number']
+    df_matchup_data['cum_all_play_wins_per_week'] = df_matchup_data['cum_all_play_wins_per_week'].round(decimals=1)
+
+    return df_matchup_data
 
 
 def survivor_challenge(df_matchup_data, week_number):
@@ -324,7 +368,7 @@ def survivor_challenge(df_matchup_data, week_number):
 
         df_remaining_teams = df_remaining_teams.loc[df_remaining_teams != survivor_loser]
 
-    return (df_remaining_teams, survivor_loser)
+    return df_remaining_teams, survivor_loser
 
 
 def create_final_standings():
@@ -362,14 +406,16 @@ def create_final_standings():
     }
 
     # Dictionary containing the metrics that will be transformed as cumulative totals by team across weeks
-    cum_dictionary = {'score': 'cum_score', 'win_ind': 'cum_wins', 'all_play_wins': 'cum_all_play_wins'
-        , 'all_play_losses': 'cum_all_play_losses', 'tie_ind': 'cum_ties'
-        , 'loss_ind': 'cum_losses', 'total_wins': 'cum_total_wins'}
+    cum_dictionary = {'score': 'cum_score', 'win_ind': 'cum_wins', 'all_play_wins': 'cum_all_play_wins',
+                      'all_play_losses': 'cum_all_play_losses', 'tie_ind': 'cum_ties', 'loss_ind': 'cum_losses',
+                      'total_wins': 'cum_total_wins', 'all_play_wins_int': 'cum_all_play_wins_int',
+                      'all_play_losses_int': 'cum_all_play_losses_int', 'all_play_ties_int': 'cum_all_play_ties_int',
+                      'score_opp': 'cum_score_opp'}
 
     # Set the ranking system of the league
-    rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]]
-        , '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]]
-        , '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+    rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]],
+                                  '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]],
+                                  '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
 
     # Create dataframe versions of the 2019 and 2020 team dictionaries
     team_df_2019 = pd.DataFrame(teamId_dict['2019'], columns=['teamId', 'full_name', 'manual_nickname'])
@@ -402,33 +448,36 @@ def create_final_standings():
     df_matchup_data_w_all_play = add_all_play(df_matchup_data_w_wl)
     df_matchup_data_w_cum = add_cum_metrics(df_matchup_data_w_all_play, cum_dictionary)
     df_matchup_data_w_team = merge_on_team_data(df_matchup_data_w_cum, team_df)
-    df_final = add_all_standings(df_matchup_data_w_team, rank_metrics_by_week_range=rank_metrics_by_week_range)
+    df_updated_matchup_data = add_update_additional_metrics(df_matchup_data_w_team)
+    df_final = add_all_standings(df_updated_matchup_data, rank_metrics_by_week_range=rank_metrics_by_week_range)
 
     return df_final
 
+
 if __name__ == '__main__':
     ''' This mainly just checks the data that was created '''
-    week_number = 7
+    choose_week_number = 7
 
     pd.options.display.max_columns = None
     pd.options.display.width = None
 
     df_final = create_final_standings()
 
-    df_current_standings = df_final[['week_number', 'full_name', 'standings',
-            'cum_total_wins','score','all_play_wins', 'cum_score', 'cum_all_play_wins',
-            'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']].loc[df_final['week_number'] == week_number]
+    keep_vars = ['week_number', 'full_name', 'standings', 'cum_total_wins','score','all_play_wins',
+                 'cum_score', 'cum_all_play_wins', 'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']
+
+    df_current_standings = df_final[keep_vars].loc[df_final['week_number'] == choose_week_number]
 
     print(df_current_standings)
 
-    remaining_teams, losing_team = survivor_challenge(df_final, week_number)
+    remaining_teams, losing_team = survivor_challenge(df_final, choose_week_number)
     print(losing_team)
     print(remaining_teams)
 
     print(df_final.columns)
 
     file_dir = '/home/cdelong/python_projects/ff_web_app/\
-    delt_ff_standings/weekly_standings_csvs/Delt_2020_Week' + str(week_number) + '_Standings.csv'
+    delt_ff_standings/weekly_standings_csvs/Delt_2020_Week' + str(choose_week_number) + '_Standings.csv'
 
     # Creates a csv of the current standings
     # df_current_standings.to_csv(file_dir)
