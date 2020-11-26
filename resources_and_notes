@@ -23,3 +23,44 @@ Make changes to an existing app: https://devcenter.heroku.com/articles/git
 Miscellaneous notes:
     - Make sure the "app.run_server" code is the ONLY portion that is under the "if __name__ ..." block. I had everything under this
       originally and it kept causing H13 errors when launching because it couldn't find the "server" variable
+      
+
+Changing the NotebookApp.iopub_data_rate_limit from 1,000,000 to 10,000,000,000 by using: a) jupyter notebook --NotebookApp.iopub_data_rate_limit=10000000000
+
+  1. Note: As of now, this means that jupyter needs to be launched in this manner everytime i run this
+     this code in order to prevent the error. It appears theres away to change the config file though,
+     so this can be looked into at another time
+Important source: https://stmorse.github.io/journal/espn-fantasy-v3.html
+
+Another solid source here: http://www.gregreda.com/2015/02/15/web-scraping-finding-the-api/
+
+I'll probably need to create a manual mapping between teamId and Team Name since they don't provide a good one in the base URL 
+    - Note that this aligns with the order found in the "Members" selection from the "League" drop-down 
+    - This will mapping will need to be kept at a season/team level to account teams dropping in and out over time (don't worry about this now though...)
+
+mMatchup view 
+    - schedule List (the following represents one element in the list)
+        a) home and away Dictionary
+            1. 'cumulativeScore' Dictionary
+                - Appears to be a score breakdown by stat via the 'scoreByStat' key (returns another dictionary), but it's hard to tell what each of its keys 
+                represent
+        b) 'gamesPlayed' Integer
+            1. Seems like it's supposed to be games played but this is always 0?
+        c) 'pointsByScoringPeriod' Dictionary
+            1. Current week is the key which returns a float of the score
+            2. This is what we're looking for, but 'totalPoints' is more straightforward
+        d) 'teamId' Integer *** IMPORTANT KEY ***
+            1. This seems to be a float for 'away' and integer for 'home'?
+        e) 'totalPoints' Float *** THIS IS THE PRIMARY STAT WE'RE LOOKING FOR ***
+            1. points scored in that week
+            
+Other parameters to use:
+    - "kona_player_info"
+    - "proTeamSchedules_wl"
+    - "mTeam"
+    - "mBoxscore"
+    - "mRoster"
+    - "mSettings"
+    - "kona_player_info"
+    - "player_wl"
+    - "mSchedule"
