@@ -10,15 +10,19 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 
+for_rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]],
+                                  '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]],
+                                  '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+
 # pull the entire processed Week/Team level dataframe
-df_standings = create_ff_standings.create_final_standings()
+df_standings = create_ff_standings.create_final_standings(rank_metrics_by_week_range=for_rank_metrics_by_week_range)
 
 # add string versions of the score metrics so that they can be formatted correctly
-df_standings['cum_score_str']=df_standings['cum_score'].map('{:,.2f}'.format)
-df_standings['cum_score_opp_str']=df_standings['cum_score_opp'].map('{:,.2f}'.format)
-df_standings['cum_score_per_week_str']=df_standings['cum_score_per_week'].map('{:,.2f}'.format)
-df_standings['cum_score_opp_per_week_str']=df_standings['cum_score_opp_per_week'].map('{:,.2f}'.format)
-df_standings['cum_all_play_wins_per_week_str']=df_standings['cum_all_play_wins_per_week'].map('{:,.1f}'.format)
+df_standings['cum_score_str'] = df_standings['cum_score'].map('{:,.2f}'.format)
+df_standings['cum_score_opp_str'] = df_standings['cum_score_opp'].map('{:,.2f}'.format)
+df_standings['cum_score_per_week_str'] = df_standings['cum_score_per_week'].map('{:,.2f}'.format)
+df_standings['cum_score_opp_per_week_str'] = df_standings['cum_score_opp_per_week'].map('{:,.2f}'.format)
+df_standings['cum_all_play_wins_per_week_str'] = df_standings['cum_all_play_wins_per_week'].map('{:,.1f}'.format)
 
 # Create dictionary to map the original variable names to the new ones
 # Note: making this a global variable for now since it gets referenced later
@@ -85,13 +89,20 @@ standings_table_dropdown = dcc.Dropdown(
              for week_number in range(1, current_week_number + 1)],
     value=current_week_number,
     clearable=False,
-    style={'width': '30%',
-           'margin-left': '-75px',
-           'margin-right': '0px',
-           'font_family': 'Arial',
-           'display': 'inline-block',
-           'verticalAlign': 'middle',
-           'text-align': 'center',
+    style={
+        # 'width': '30%',
+        #    'margin-left': '-75px',
+        #    'margin-right': '0px',
+        #    'font_family': 'Arial',
+        #    'display': 'inline-block',
+        #    'verticalAlign': 'middle',
+        #    'text-align': 'center',
+
+        'width': '90px',
+        'font_family': 'Arial',
+        'display': 'inline-block',
+        'verticalAlign': 'middle',
+        'text-align': 'center',
            }
 )
 
@@ -100,7 +111,8 @@ standings_table = dash_table.DataTable(
     id='standings-table',
     columns=[{"name": i, "id": i} for i in df_for_standings_table.columns],
     data=df_for_standings_table.to_dict('records'),
-    style_table={'maxWidth': '75%',
+    style_table={'maxWidth': '1000px',
+                 # 'maxWidth': '75%',
                  'marginLeft': 'auto',
                  'marginRight': 'auto'
                  },
@@ -150,16 +162,23 @@ app.layout = html.Div(children=[
             ),
 
     html.Div([html.H6("Choose Week: ",
-                      style={'marginLeft': 'auto', 'marginRight': 'auto',
-                             'display': 'inline-block',
+                      style={'display': 'inline-block',
+                             # 'marginLeft': 'auto', 'marginRight': 'auto',
                              'verticalAlign': 'middle'
                              }
                       ),
               standings_table_dropdown
               ],
              style={'textAlign': 'center',
-                    'margin-right': '0px',
-                    'margin-left': '150px'
+                    'verticalAlign': 'middle'
+                    # 'margin-right': '0px',
+                    # 'margin-left': '150px'
+
+                    # 'margin-right': 'auto',
+                    # 'margin-left': 'auto'
+                    # 'display': 'inline-block',
+                    # 'horizonatlAlign': 'middle',
+                    # 'width': '100%'
                     }
              ),
 
