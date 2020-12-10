@@ -53,6 +53,9 @@ mMatchup view
             1. This seems to be a float for 'away' and integer for 'home'?
         e) 'totalPoints' Float *** THIS IS THE PRIMARY STAT WE'RE LOOKING FOR ***
             1. points scored in that week
+    - Live scoring is available during the current week via 'totalPointsLive' in the home and away dictionaries
+        a) Note that this disappears after the week is through
+        b) statSourceId = 0 ==> Actual points and statSourceId = 1 ==> Projected points
             
 Other parameters to use:
     - "kona_player_info"
