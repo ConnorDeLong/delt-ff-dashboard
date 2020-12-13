@@ -14,7 +14,6 @@ for_rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [Fals
                                   '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]],
                                   '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
 
-# pull the entire processed Week/Team level dataframe
 df_standings = create_ff_standings.create_final_standings(rank_metrics_by_week_range=for_rank_metrics_by_week_range)
 
 # add string versions of the score metrics so that they can be formatted correctly
@@ -24,9 +23,7 @@ df_standings['cum_score_per_week_str'] = df_standings['cum_score_per_week'].map(
 df_standings['cum_score_opp_per_week_str'] = df_standings['cum_score_opp_per_week'].map('{:,.2f}'.format)
 df_standings['cum_all_play_wins_per_week_str'] = df_standings['cum_all_play_wins_per_week'].map('{:,.1f}'.format)
 
-# Create dictionary to map the original variable names to the new ones
-# Note: making this a global variable for now since it gets referenced later
-# Maybe making a class includes this stuff as attributes would be better?
+# Used to create names for the table displayed in the app
 dict_columns_w_table_names = {'standings': 'Rank', 'manual_nickname': 'Team', 'cum_score_str': 'Points Scored',
                               'cum_wlt': 'W-L-T', 'cum_all_play_wlt_int': 'All Play W-L-T',
                               'cum_score_per_week_str': 'Points Scored/Week',
@@ -43,36 +40,31 @@ dict_sort_table_variables = {'cum_wlt': 'cum_wins', 'cum_all_play_wlt_int': 'cum
                              'cum_score_per_week_str': 'cum_score_per_week',
                              'cum_score_opp_per_week_str': 'cum_score_opp_per_week'}
 
-def create_df_for_standings_table(df_final, week_number, sort_dict=None):
-    """ Create table used in the dashboard """
+def create_df_for_standings_table(df_final, week_number, new_col_names=dict_columns_w_table_names, sort_dict=None):
+    """ Create dataframe used in the dashboard """
     if sort_dict is None:
         sort_dict = {'sort_values': ['standings'], 'sort_asc': ['True']}
 
-    # pull the standings for the current week
-    # df_current_standings = df_final[initial_keep_vars_og].loc[df_final['week_number'] == week_number]
     df_current_standings = df_final.loc[df_final['week_number'] == week_number]
 
     df_current_standings = df_current_standings.sort_values(sort_dict['sort_values'],
                                                             ascending=sort_dict['sort_asc'], inplace=False)
 
-    # create final dataframe containing only the variables to use in the standings table
     final_keep_vars = ['standings', 'manual_nickname', 'cum_wlt', 'cum_score_str', 'cum_score_opp_str',
                        'cum_all_play_wlt_int', 'cum_score_per_week_str', 'cum_score_opp_per_week_str',
                        'cum_all_play_wins_per_week_str']
     df_current_standings = df_current_standings[final_keep_vars]
 
-    # rename variables to be presentable
-    df_current_standings.rename(columns=dict_columns_w_table_names, inplace=True)
+    df_current_standings.rename(columns=new_col_names, inplace=True)
 
     return df_current_standings
 
 
-# get the latest week number and limit it to the last week of the regular season
+# ensures the table only displays regular season standings
 current_week_number = get_week_number.get_current_week_number()
 if current_week_number > 13:
     current_week_number = 13
 
-# create the df used for the "standings-table"
 df_for_standings_table = create_df_for_standings_table(df_standings, current_week_number)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -82,7 +74,6 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # this is necessary for the Dash app to run in Heroku
 server = app.server
 
-# create the drop-down used to adjust the standings table
 standings_table_dropdown = dcc.Dropdown(
     id='standings-table-dd',
     options=[{'label': f"Week {week_number}", 'value': week_number}
@@ -106,7 +97,6 @@ standings_table_dropdown = dcc.Dropdown(
            }
 )
 
-# create table containing the standings
 standings_table = dash_table.DataTable(
     id='standings-table',
     columns=[{"name": i, "id": i} for i in df_for_standings_table.columns],
@@ -188,7 +178,7 @@ app.layout = html.Div(children=[
 @app.callback(Output('standings-table', 'data'),
               [Input('standings-table', 'sort_by'),
                Input('standings-table-dd', 'value')])
-def sort_table_standings(sort_by, week_number):
+def sort_table_standings(sort_by, week_number, dict_sort_table_variables=dict_sort_table_variables):
     # note that the sort_by property is a list of dictionaries with the following form:
     # {'column_id': <column_name>, 'direction': <'ascending' or 'descending'>}
 
