@@ -37,6 +37,7 @@ Another solid source here: http://www.gregreda.com/2015/02/15/web-scraping-findi
 I'll probably need to create a manual mapping between teamId and Team Name since they don't provide a good one in the base URL 
     - Note that this aligns with the order found in the "Members" selection from the "League" drop-down 
     - This will mapping will need to be kept at a season/team level to account teams dropping in and out over time (don't worry about this now though...)
+    - NEED TO DOUBLE CHECK THIS LATER: "mTeams" parameter should show the full name of the manager. 'id' key connects to something in the "mTeam" parameter
 
 mMatchup view 
     - schedule List (the following represents one element in the list)
