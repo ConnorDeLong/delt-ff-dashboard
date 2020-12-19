@@ -69,4 +69,6 @@ Other parameters to use:
     - "player_wl"
     - "mSchedule"
     
+IMPORTANT NOTE: Seasons prior to 2020 do NOT give accurate roster level detail by week (only shows last week's roster for every week)
+
 Simulation source: https://github.com/dmparker0/nflsim 
