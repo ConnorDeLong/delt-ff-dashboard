@@ -1,59 +1,68 @@
-import scipy.stats
+import requests
+import pandas as pd
+import numpy as np
 
-# check = scipy.stats.norm(0, [13]).cdf(5)
-#
-# check2 = 1 - scipy.stats.norm(5, [13]).cdf(0)
-#
-# print(check)
-# print(check2)
+from ratelimit import limits, sleep_and_retry
 
-from create_ff_standings import *
+pd.options.display.max_columns = None
 
-def create_final_standings(league_id=48347143, year=2020,
-                           rank_metrics_by_week_range=None, cum_metrics_dict=None, playoff_week_start=14):
-    """ return standings through all current weeks available and current standings"""
+slotcodes = {
+    0: 'QB', 2: 'RB', 4: 'WR',
+    6: 'TE', 16: 'Def', 17: 'K',
+    20: 'Bench', 21: 'IR', 23: 'Flex'
+}
 
-    if cum_metrics_dict is None:
-        # Dictionary containing the metrics that will be transformed as cumulative totals by team across weeks
-        cum_metrics_dict = {'score': 'cum_score', 'win_ind': 'cum_wins', 'all_play_wins': 'cum_all_play_wins',
-                            'all_play_losses': 'cum_all_play_losses', 'tie_ind': 'cum_ties', 'loss_ind': 'cum_losses',
-                            'total_wins': 'cum_total_wins', 'all_play_wins_int': 'cum_all_play_wins_int',
-                            'all_play_losses_int': 'cum_all_play_losses_int',
-                            'all_play_ties_int': 'cum_all_play_ties_int', 'score_opp': 'cum_score_opp'}
 
-    if rank_metrics_by_week_range is None:
-        # Set the ranking system of the league
-        rank_metrics_by_week_range = {'1-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+@sleep_and_retry
+@limits(calls=6000, period=600)
+def pull_data(year, league_id=0, dict_params={}):
+    """ Returns a JSON object containing the data pulled APIs url """
+    if league_id == 0:
+        url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + str(year)
+    else:
+        if year < 2020:
+            url = "https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/" + \
+                  str(league_id) + "?seasonId=" + str(year)
+        else:
+            url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + \
+                  str(year) + "/segments/0/leagues/" + str(league_id)
 
-    num_weeks_reg_season = playoff_week_start - 1
+    r = requests.get(url, params=dict_params)
 
-    # Create several different JSON objects containing different pulls from the ESPN API
-    matchup_data = pull_data(year, league_id=league_id,
-                             dict_params={"view": "mMatchup"})
+    status_code = r.status_code
 
-    df_team_all_seasons = create_team_data.create_team_data()
-    df_team_current_season = df_team_all_seasons.loc[df_team_all_seasons['seasonId'] == year]
+    if r.status_code == 200:
+        pass
+    else:
+        if r.status_code == 429:
+            print("429 error")
 
-    # Run through the processing steps to create the final Team/Week level dataframe
-    df_matchup_data = create_matchup_df(matchup_data, playoff_week_start=playoff_week_start)
-    df_expanded_matchup = expand_matchup_data(df_matchup_data)
-    df_matchup_data_w_wl = add_win_loss_ind(df_expanded_matchup)
-    df_matchup_data_w_all_play = add_all_play(df_matchup_data_w_wl)
-    df_matchup_data_w_cum = add_cum_metrics(df_matchup_data_w_all_play, cum_metrics_dict)
-    df_matchup_data_w_team = merge_on_team_data(df_matchup_data_w_cum, df_team_current_season)
-    df_updated_matchup_data = add_update_additional_metrics(df_matchup_data_w_team)
-    df_final = add_all_standings(df_updated_matchup_data, num_weeks_reg_season=num_weeks_reg_season,
-                                 rank_metrics_by_week_range=rank_metrics_by_week_range)
+    #         return None
 
-    return df_final
+    # 2020 url returns JSON object while prior years return it in a list
+    if year < 2020:
+        d = r.json()[0]
+    else:
+        d = r.json()
 
-check = create_final_standings()
+    r.close()
 
-print(check)
+    return [d, status_code]
 
-# by_group = ['A', 'B', 'C']
-# cum_group = ['D', 'E']
-#
-# by_cum_group = by_group + cum_group
-#
-# print(by_cum_group)
+file = '/home/cdelong/python_projects/ff_web_app/delt_ff_standings/Leagues_Found.csv'
+
+leagues_found = pd.read_csv(file)
+
+leagueIds = list(leagues_found['leagueId'])
+
+status_codes = []
+for league in leagueIds:
+    status_code = pull_data(2020, league_id=league)[1]
+
+    status_codes.append([league, status_code])
+
+d_status_codes = pd.DataFrame(status_codes, columns=['leagueId', 'status_codes'])
+
+new_file = '/home/cdelong/python_projects/ff_web_app/delt_ff_standings/temp.csv'
+
+d_status_codes.to_csv(new_file)
