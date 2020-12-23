@@ -1,3 +1,6 @@
+THINGS TO UPDATE:
+    - "create_matchup_df" needs the week_number updated (currently uses "matchupPeriodId" which could span multiple weeks)
+
 Basic Github stuff (add, push, commit, and push steps): https://readwrite.com/2013/10/02/github-for-beginners-part-2/
     - "git push origin <branch>" to push to a particular branch?
     
