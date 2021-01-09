@@ -25,6 +25,9 @@ def get_current_week_number():
 
     current_date = datetime.now().date()
 
+    # Creating this as a default
+    current_week_number = 13
+
     current_date_str = current_date.strftime("%m/%d/%Y")
     for key, value in week_number_dates_dict.items():
         if current_date_str == key:
@@ -32,7 +35,4 @@ def get_current_week_number():
             break
 
     return current_week_number
-
-
-
 

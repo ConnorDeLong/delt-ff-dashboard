@@ -42,7 +42,11 @@ def create_matchup_df(matchup_data, playoff_week_start=14):
     data = []
 
     for i, matchup_dict in enumerate(matchup_data['schedule']):
+        matchup_period = matchup_dict['matchupPeriodId']
         week_number = matchup_dict['matchupPeriodId']
+        # NOTE: Need a way to properly assign week number. Below doesn't work because
+        # 'pointsByScoringPeriod' is only available for weeks that have been played
+        # print(week_number, ": ", matchup_dict['home']['pointsByScoringPeriod'].keys())
 
         # bye weeks cause the "away" key to be missing for the team with a bye
         try:
@@ -60,9 +64,9 @@ def create_matchup_df(matchup_data, playoff_week_start=14):
             teamId_home = None
             score_home = None
 
-        data.append([week_number, teamId_away, score_away, teamId_home, score_home])
+        data.append([week_number, matchup_period, teamId_away, score_away, teamId_home, score_home])
 
-    df_matchup = pd.DataFrame(data, columns=['week_number', 'teamId_away', 'score_away',
+    df_matchup = pd.DataFrame(data, columns=['week_number', 'matchup_period', 'teamId_away', 'score_away',
                                              'teamId_home', 'score_home']
                               )
 
@@ -370,7 +374,7 @@ def survivor_challenge(df_matchup_data, week_number):
 
 if __name__ == '__main__':
     ''' This mainly just checks the data that was created '''
-    choose_week_number = 12
+    choose_week_number = 13
 
     for_rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]],
                                   '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]],
@@ -400,6 +404,6 @@ if __name__ == '__main__':
     # Creates a csv of the current standings
     # df_current_standings.to_csv(file_dir)
 
-    file_dir_all = '/home/cdelong/python_projects/ff_web_app/delt_ff_standings/weekly_standings_csvs/Delt_2020_All_Standings.csv'
-
-    df_all_standings.to_csv(file_dir_all)
+    # file_dir_all = '/home/cdelong/python_projects/ff_web_app/delt_ff_standings/weekly_standings_csvs/Delt_2020_All_Standings.csv'
+    #
+    # df_all_standings.to_csv(file_dir_all)

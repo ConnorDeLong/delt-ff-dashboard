@@ -6,15 +6,39 @@ from ratelimit import limits, sleep_and_retry
 
 pd.options.display.max_columns = None
 
-slotcodes = {
-    0: 'QB', 2: 'RB', 4: 'WR',
-    6: 'TE', 16: 'Def', 17: 'K',
-    20: 'Bench', 21: 'IR', 23: 'Flex'
+teamId_dict = {'2019': [
+    [1, "Connor DeLong", "DeLong"],
+    [2, "Shawn Fulford", "Fulfi"],
+    [3, "Kevin Perelstein", "K-Train"],
+    [4, "Mario Bynum", "Mario"],
+    [5, "Brendan Elliot", "Brendan"],
+    [6, "Josh Nadeau", "Germany"],
+    [7, "Kieth Kaplan", "Kieth"],
+    [8, "Jonathan Kaunert", "Jon"],
+    [9, "Brock Corsi", "Brock"],
+    [10, "Travis Hohman", "Travis"],
+    [11, "Keanu Hines", "Keanu"],
+    [12, "Matt Fleisher", "Fleish"]
+],
+    '2020': [
+        [1, "Connor DeLong", "DeLong"],
+        [2, "Shawn Fulford", "Fulfi"],
+        [3, "Kevin Perelstein", "K-Train"],
+        [4, "Mario Bynum", "Mario"],
+        [5, "Brian Solomon", "Solomon"],
+        [6, "Josh Nadeau", "Germany"],
+        [7, "Kieth Kaplan", "Kieth"],
+        [8, "Jonathan Kaunert", "Jon"],
+        [9, "Alex Darr", "Darr"],
+        [10, "Travis Hohman", "Travis"],
+        [11, "Keanu Hines", "Keanu"],
+        [12, "Matt Fleisher", "Fleish"]
+    ]
 }
 
 
-@sleep_and_retry
-@limits(calls=6000, period=600)
+# @sleep_and_retry
+# @limits(calls=6000, period=600)
 def pull_data(year, league_id=0, dict_params={}):
     """ Returns a JSON object containing the data pulled APIs url """
     if league_id == 0:
@@ -37,9 +61,9 @@ def pull_data(year, league_id=0, dict_params={}):
         if r.status_code == 429:
             print("429 error")
 
-    #         return None
+        return None
 
-    # 2020 url returns JSON object while prior years return it in a list
+        # 2020 url returns JSON object while prior years return it in a list
     if year < 2020:
         d = r.json()[0]
     else:
@@ -47,22 +71,41 @@ def pull_data(year, league_id=0, dict_params={}):
 
     r.close()
 
-    return [d, status_code]
+    return d
 
-file = '/home/cdelong/python_projects/ff_web_app/delt_ff_standings/Leagues_Found.csv'
 
-leagues_found = pd.read_csv(file)
+# file_dir = 'Simulation-Work/Leagues_Found.csv'
+file_dir = 'simulation_work/CheckThis.csv'
 
-leagueIds = list(leagues_found['leagueId'])
+def find_leagues(startId, endId, seasonId):
+    active_leagues = []
 
-status_codes = []
-for league in leagueIds:
-    status_code = pull_data(2020, league_id=league)[1]
+    for leagueId in range(startId, endId):
+        general_league_data = pull_data(seasonId, league_id=leagueId)
 
-    status_codes.append([league, status_code])
+        columns = ['leagueId', 'number_of_teams', 'startId', 'endId', 'seasonId', 'status_code']
 
-d_status_codes = pd.DataFrame(status_codes, columns=['leagueId', 'status_codes'])
+        if general_league_data == None:
+            pass
+        else:
+            num_teams = len(general_league_data['members'])
 
-new_file = '/home/cdelong/python_projects/ff_web_app/delt_ff_standings/temp.csv'
+            current_league = [leagueId, num_teams, startId, endId, seasonId, 200]
 
-d_status_codes.to_csv(new_file)
+            df_current_league = pd.DataFrame(data=[current_league], columns=columns)
+            df_current_league.to_csv(file_dir, mode='a', header=False)
+
+            active_leagues.append(current_league)
+
+    df_current_league = pd.DataFrame(data=active_leagues, columns=columns)
+
+    return df_current_league
+
+
+for_start = 61647491
+
+new = pd.DataFrame()
+new.to_csv(file_dir)
+
+get_leagues = find_leagues(for_start, for_start + 100000, 2020)
+print(get_leagues)

@@ -8,7 +8,7 @@ import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
-import dash_bootstrap_components as dbc
+# import dash_bootstrap_components as dbc
 
 for_rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]],
                                   '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]],
@@ -16,7 +16,7 @@ for_rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [Fals
 
 df_standings = create_ff_standings.create_final_standings(rank_metrics_by_week_range=for_rank_metrics_by_week_range)
 
-# add string versions of the score metrics so that they can be formatted correctly
+# Adding string versions of the score metrics so that they can be formatted correctly
 df_standings['cum_score_str'] = df_standings['cum_score'].map('{:,.2f}'.format)
 df_standings['cum_score_opp_str'] = df_standings['cum_score_opp'].map('{:,.2f}'.format)
 df_standings['cum_score_per_week_str'] = df_standings['cum_score_per_week'].map('{:,.2f}'.format)
@@ -61,7 +61,12 @@ def create_df_for_standings_table(df_final, week_number, new_col_names=dict_colu
 
 
 # ensures the table only displays regular season standings
-current_week_number = get_week_number.get_current_week_number()
+# need to update this to more effectively assign week numbers
+try:
+    current_week_number = get_week_number.get_current_week_number()
+except:
+    current_week_number = 13
+
 if current_week_number > 13:
     current_week_number = 13
 
@@ -71,7 +76,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # external_stylesheets = [dbc.themes.FLATLY]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-# this is necessary for the Dash app to run in Heroku
+# This is necessary for the Dash app to run in Heroku
 server = app.server
 
 standings_table_dropdown = dcc.Dropdown(
