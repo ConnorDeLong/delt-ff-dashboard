@@ -180,6 +180,7 @@ app.layout = html.Div(children=[
     standings_table,
 ])
 
+
 @app.callback(Output('standings-table', 'data'),
               [Input('standings-table', 'sort_by'),
                Input('standings-table-dd', 'value')])

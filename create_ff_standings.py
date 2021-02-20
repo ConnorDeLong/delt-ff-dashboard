@@ -5,25 +5,87 @@ import numpy as np
 import create_team_data
 
 
-def pull_data(year, league_id=0, dict_params=None):
-    """ Returns a JSON object containing the data pulled from the API """
+def convert_tuple_to_list(tuple_var):
+    """
+    Converts tuple to a list
+    Note: This isn't really necessary, but accounts for 1D tuple cases so i'm using it
+    """
 
-    if dict_params is None:
-        dict_params = {}
-    if league_id == 0:
-        url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + str(year)
+    list_var = []
+
+    # Need to process 1D and 2D tuples differently
+    if type(tuple_var[0]) is tuple:
+        for value in tuple_var:
+            dict_key = value[0]
+            dict_value = value[1]
+
+            list_var.append([dict_key, dict_value])
     else:
-        if year < 2020:
-            url = "https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/" + \
-                  str(league_id) + "?seasonId=" + str(year)
+        dict_key = tuple_var[0]
+        dict_value = tuple_var[1]
+
+        list_var.append([dict_key, dict_value])
+
+    return list_var
+
+
+def convert_dict_to_list(dict_var):
+    """ Converts dictionary to a 2D list """
+
+    list_var = []
+    for param, param_value in dict_var.items():
+        list_var.append([param, param_value])
+
+    return list_var
+
+
+def pull_data(season_id, league_id, params=None):
+    """ Returns a JSON object containing the data pulled APIs url """
+
+    if params == None:
+        params = []
+
+    if season_id < 2020:
+        url = "https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/" + \
+              str(league_id) + "?seasonId=" + str(season_id)
+    else:
+        url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + \
+              str(season_id) + "/segments/0/leagues/" + str(league_id)
+
+    # Passing the dict_params directly to the request_params of the requests.get method was
+    # resulting in certain pulls retrieving unspecified data.
+    # So, I'm directly applying those parameters to the URL string to prevent this
+    # Note: This was likely happening due to duplicate keys being used (e.g. "view") in the dict
+
+    if type(params) is tuple:
+        params = convert_tuple_to_list(params)
+
+    if type(params) is dict:
+        params = convert_dict_to_list(params)
+
+    for full_param in params:
+        param = str(full_param[0])
+        param_value = str(full_param[1])
+
+        if url.find("?") == -1:
+            url = url + "?" + param + "=" + param_value
         else:
-            url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + \
-                  str(year) + "/segments/0/leagues/" + str(league_id)
+            url = url + "&" + param + "=" + param_value
 
-    r = requests.get(url, params=dict_params)
+    r = requests.get(url)
 
-    # 2020 url returns JSON object while prior years return it in a list
-    if year < 2020:
+    status_code = r.status_code
+
+    if r.status_code == 200:
+        pass
+    else:
+        if r.status_code == 429:
+            print("429 error")
+
+        return None
+
+        # 2020 url returns JSON object while prior season_ids return it in a list
+    if season_id < 2020:
         d = r.json()[0]
     else:
         d = r.json()
@@ -101,13 +163,14 @@ def expand_matchup_data(matchup_data):
     df_expanded['teamId'] = df_expanded['teamId'].astype('int')
     df_expanded['teamId_opp'] = df_expanded['teamId_opp'].astype('int')
 
+    df_expanded.sort_values(['week_number', 'teamId'], inplace=True)
+
     return df_expanded
 
 
 def add_win_loss_ind(matchup_data):
-    """
-    Returns Week/Team level dataframe with win, loss, tie indicators added
-    """
+    """ Returns Week/Team level dataframe with win, loss, tie indicators added """
+
     matchup_data = matchup_data.copy()
     wl_conditions = [
         (matchup_data['score'] > matchup_data['score_opp']),
@@ -190,6 +253,7 @@ def add_cum_metrics(matchup_data, cum_metrics_dict, by_group=None, cum_group=Non
 
 def merge_on_team_data(matchup_data, team_df):
     """ Returns Week/Team level dataframe with team information merged on """
+
     matchup_data = matchup_data.copy()
     team_df = team_df.copy()
 
@@ -325,7 +389,7 @@ def create_final_standings(league_id=48347143, year=2020,
 
     num_weeks_reg_season = playoff_week_start - 1
 
-    matchup_data = pull_data(year, league_id=league_id, dict_params={"view": "mMatchup"})
+    matchup_data = pull_data(year, league_id, params=[["view", "mMatchup"], ["view", "mMatchupScore"]])
 
     df_team_all_seasons = create_team_data.create_team_data()
     df_team_current_season = df_team_all_seasons.loc[df_team_all_seasons['seasonId'] == year]
@@ -391,12 +455,7 @@ if __name__ == '__main__':
     df_current_standings = df_all_standings[keep_vars].loc[df_all_standings['week_number'] == choose_week_number]
 
     print(df_current_standings)
-
-    remaining_teams, losing_team = survivor_challenge(df_all_standings, choose_week_number)
-    print(losing_team)
-    print(remaining_teams)
-
-    print(df_all_standings.columns)
+    # print(df_all_standings)
 
     file_dir = '/home/cdelong/python_projects/ff_web_app/\
     delt_ff_standings/weekly_standings_csvs/Delt_2020_Week' + str(choose_week_number) + '_Standings.csv'
@@ -407,3 +466,10 @@ if __name__ == '__main__':
     # file_dir_all = '/home/cdelong/python_projects/ff_web_app/delt_ff_standings/weekly_standings_csvs/Delt_2020_All_Standings.csv'
     #
     # df_all_standings.to_csv(file_dir_all)
+
+    # NEED TO FIX THE "survivor_challenge" FUNCTION
+    # remaining_teams, losing_team = survivor_challenge(df_all_standings, choose_week_number)
+    # print(losing_team)
+    # print(remaining_teams)
+    #
+    # print(df_all_standings.columns)

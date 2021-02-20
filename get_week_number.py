@@ -2,11 +2,12 @@ from datetime import datetime
 from datetime import timedelta
 
 def create_week_number_dates(str_first_prelim_date='9/15/2020'):
-    '''
+    """
     - Returns dictionary containing the week numbers (value) associated with each day in
       the regular season (this actually might extend out a bit, but this should be fine)
     - Intending to use this as a way to update the app with the appropriate week
-    '''
+    """
+
     week_number_dates_dict = {}
 
     date_prelim_date = datetime.strptime(str_first_prelim_date, "%m/%d/%Y").date()

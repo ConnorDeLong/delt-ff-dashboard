@@ -37,6 +37,34 @@ teamId_dict = {'2019': [
 }
 
 
+def pull_data_old(year, league_id=0, dict_params=None):
+    """ Returns a JSON object containing the data pulled from the API """
+
+    if dict_params is None:
+        dict_params = {}
+    if league_id == 0:
+        url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + str(year)
+    else:
+        if year < 2020:
+            url = "https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/" + \
+                  str(league_id) + "?seasonId=" + str(year)
+        else:
+            url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + \
+                  str(year) + "/segments/0/leagues/" + str(league_id)
+
+    r = requests.get(url, params=dict_params)
+
+    # 2020 url returns JSON object while prior years return it in a list
+    if year < 2020:
+        d = r.json()[0]
+    else:
+        d = r.json()
+
+    r.close()
+
+    return d
+
+
 # @sleep_and_retry
 # @limits(calls=6000, period=600)
 def pull_data(year, league_id=0, dict_params={}):

@@ -85,6 +85,7 @@ def temp_create_team_data():
 
     return df_team
 
+
 def create_team_data():
     return create_initial_team_data()
 
