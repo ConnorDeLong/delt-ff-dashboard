@@ -1,98 +1,9 @@
 # https://opensource.com/article/18/1/step-step-guide-git
-import requests
 import pandas as pd
 import numpy as np
 import create_team_data
-
-
-def convert_tuple_to_list(tuple_var):
-    """
-    Converts tuple to a list
-    Note: This isn't really necessary, but accounts for 1D tuple cases so i'm using it
-    """
-
-    list_var = []
-
-    # Need to process 1D and 2D tuples differently
-    if type(tuple_var[0]) is tuple:
-        for value in tuple_var:
-            dict_key = value[0]
-            dict_value = value[1]
-
-            list_var.append([dict_key, dict_value])
-    else:
-        dict_key = tuple_var[0]
-        dict_value = tuple_var[1]
-
-        list_var.append([dict_key, dict_value])
-
-    return list_var
-
-
-def convert_dict_to_list(dict_var):
-    """ Converts dictionary to a 2D list """
-
-    list_var = []
-    for param, param_value in dict_var.items():
-        list_var.append([param, param_value])
-
-    return list_var
-
-
-def pull_data(season_id, league_id, params=None):
-    """ Returns a JSON object containing the data pulled APIs url """
-
-    if params == None:
-        params = []
-
-    if season_id < 2020:
-        url = "https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/" + \
-              str(league_id) + "?seasonId=" + str(season_id)
-    else:
-        url = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/" + \
-              str(season_id) + "/segments/0/leagues/" + str(league_id)
-
-    # Passing the dict_params directly to the request_params of the requests.get method was
-    # resulting in certain pulls retrieving unspecified data.
-    # So, I'm directly applying those parameters to the URL string to prevent this
-    # Note: This was likely happening due to duplicate keys being used (e.g. "view") in the dict
-
-    if type(params) is tuple:
-        params = convert_tuple_to_list(params)
-
-    if type(params) is dict:
-        params = convert_dict_to_list(params)
-
-    for full_param in params:
-        param = str(full_param[0])
-        param_value = str(full_param[1])
-
-        if url.find("?") == -1:
-            url = url + "?" + param + "=" + param_value
-        else:
-            url = url + "&" + param + "=" + param_value
-
-    r = requests.get(url)
-
-    status_code = r.status_code
-
-    if r.status_code == 200:
-        pass
-    else:
-        if r.status_code == 429:
-            print("429 error")
-
-        return None
-
-        # 2020 url returns JSON object while prior season_ids return it in a list
-    if season_id < 2020:
-        d = r.json()[0]
-    else:
-        d = r.json()
-
-    r.close()
-
-    return d
+import create_settings_data
+from pull_api_data import pull_data
 
 
 def create_matchup_df(matchup_data, playoff_week_start=14):
@@ -374,7 +285,7 @@ def add_update_additional_metrics(df_matchup_data):
 
 
 def create_final_standings(league_id=48347143, year=2020,
-                           rank_metrics_by_week_range=None, cum_metrics_dict=None, playoff_week_start=14):
+                           rank_metrics_by_week_range=None, cum_metrics_dict=None):
     """ return standings through all current weeks available and current standings"""
 
     if cum_metrics_dict is None:
@@ -387,6 +298,9 @@ def create_final_standings(league_id=48347143, year=2020,
     if rank_metrics_by_week_range is None:
         rank_metrics_by_week_range = {'1-12': [['cum_total_wins', 'cum_score'], [False, False]]}
 
+    settings_data = create_settings_data.settingsData(year, league_id)
+    playoff_week_start = settings_data.num_reg_season_matchups + 1
+    
     num_weeks_reg_season = playoff_week_start - 1
 
     matchup_data = pull_data(year, league_id, params=[["view", "mMatchup"], ["view", "mMatchupScore"]])
@@ -438,7 +352,13 @@ def survivor_challenge(df_matchup_data, week_number):
 
 if __name__ == '__main__':
     ''' This mainly just checks the data that was created '''
-    choose_week_number = 13
+    pd.options.display.max_rows = 300
+    
+    league_id = 48347143
+    season_id = 2021
+
+    settings_data = create_settings_data.settingsData(season_id, league_id)
+    choose_week_number = settings_data.currentMatchupPeriod - 1
 
     for_rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]],
                                   '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]],
@@ -447,7 +367,8 @@ if __name__ == '__main__':
     pd.options.display.max_columns = None
     pd.options.display.width = None
 
-    df_all_standings = create_final_standings(rank_metrics_by_week_range=for_rank_metrics_by_week_range)
+    df_all_standings = create_final_standings(league_id=league_id, year=season_id,
+                                              rank_metrics_by_week_range=for_rank_metrics_by_week_range)
 
     keep_vars = ['week_number', 'full_name', 'standings', 'cum_total_wins', 'score', 'all_play_wins',
                  'cum_score', 'cum_all_play_wins', 'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']
@@ -473,3 +394,11 @@ if __name__ == '__main__':
     # print(remaining_teams)
     #
     # print(df_all_standings.columns)
+    
+    
+    # matchup_data = pull_data(2020, 48347143, params=[["view", "mMatchup"], ["view", "mMatchupScore"]])
+    # df_matchup_data = create_matchup_df(matchup_data, playoff_week_start=14)
+    # print(df_matchup_data)
+    
+    # matchup_data = pull_data(2021, 48347143)
+    # print(matchup_data.keys())

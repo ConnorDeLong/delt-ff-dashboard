@@ -2,7 +2,7 @@
 
 # https://opensource.com/article/18/1/step-step-guide-git
 import create_ff_standings
-import get_week_number
+import create_settings_data
 import dash
 import dash_table
 import dash_html_components as html
@@ -10,11 +10,15 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 # import dash_bootstrap_components as dbc
 
+LEAGUE_ID = 48347143
+SEASON_ID = 2021
+
 for_rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]],
                                   '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]],
                                   '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
 
-df_standings = create_ff_standings.create_final_standings(rank_metrics_by_week_range=for_rank_metrics_by_week_range)
+df_standings = create_ff_standings.create_final_standings(rank_metrics_by_week_range=for_rank_metrics_by_week_range, 
+                                                          league_id=LEAGUE_ID, year=SEASON_ID)
 
 # Adding string versions of the score metrics so that they can be formatted correctly
 df_standings['cum_score_str'] = df_standings['cum_score'].map('{:,.2f}'.format)
@@ -38,7 +42,8 @@ dict_columns_w_table_names = {'standings': 'Rank', 'manual_nickname': 'Team', 'c
 dict_sort_table_variables = {'cum_wlt': 'cum_wins', 'cum_all_play_wlt_int': 'cum_all_play_wins',
                              'cum_score_str': 'cum_score', 'cum_score_opp_str': 'cum_score_opp',
                              'cum_score_per_week_str': 'cum_score_per_week',
-                             'cum_score_opp_per_week_str': 'cum_score_opp_per_week'}
+                             'cum_score_opp_per_week_str': 'cum_score_opp_per_week', 
+                             'cum_all_play_wins_per_week_str': 'cum_all_play_wins_per_week'}
 
 def create_df_for_standings_table(df_final, week_number, new_col_names=dict_columns_w_table_names, sort_dict=None):
     """ Create dataframe used in the dashboard """
@@ -63,12 +68,13 @@ def create_df_for_standings_table(df_final, week_number, new_col_names=dict_colu
 # ensures the table only displays regular season standings
 # need to update this to more effectively assign week numbers
 try:
-    current_week_number = get_week_number.get_current_week_number()
+    settings_data = create_settings_data.settingsData(SEASON_ID, LEAGUE_ID)
+    current_week_number = settings_data.currentMatchupPeriod - 1
 except:
-    current_week_number = 13
+    current_week_number = 14
 
-if current_week_number > 13:
-    current_week_number = 13
+if current_week_number > 14:
+    current_week_number = 14
 
 df_for_standings_table = create_df_for_standings_table(df_standings, current_week_number)
 

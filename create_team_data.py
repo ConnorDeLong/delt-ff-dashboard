@@ -31,6 +31,20 @@ def create_initial_team_data():
             [10, "Travis Hohman", "Travis"],
             [11, "Keanu Hines", "Keanu"],
             [12, "Matt Fleisher", "Fleish"]
+        ],
+          '2021': [
+                [1, "Connor DeLong", "DeLong"],
+                [2, "Shawn Fulford", "Fulfi"],
+                [14, "Joe Donato", "Jos"],
+                [4, "Mario Bynum", "Mario"],
+                [5, "Brian Solomon", "Solomon"],
+                [6, "Josh Nadeau", "Germany"],
+                [7, "Brett Huth", "Brett"],
+                [8, "Ryan Wilens", "Wilens"],
+                [9, "Connor Richie", "Connor"],
+                [13, "Brendan Elliot", "Brendan"],
+                [11, "Keanu Hines", "Keanu"],
+                [12, "Matt Fleisher", "Fleish"]
         ]
     }
 
@@ -39,8 +53,11 @@ def create_initial_team_data():
 
     team_df_2020 = pd.DataFrame(teamId_dict['2020'], columns=['teamId', 'full_name', 'manual_nickname'])
     team_df_2020['seasonId'] = 2020
+    
+    team_df_2021 = pd.DataFrame(teamId_dict['2021'], columns=['teamId', 'full_name', 'manual_nickname'])
+    team_df_2021['seasonId'] = 2021
 
-    team_df_all_seasons = pd.concat([team_df_2019, team_df_2020])
+    team_df_all_seasons = pd.concat([team_df_2019, team_df_2020, team_df_2021])
 
     team_df_all_seasons.reset_index(drop=True, inplace=True)
 
