@@ -1,0 +1,44 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Jan  9 22:24:07 2022
+
+@author: conde
+"""
+
+Example with foreign keys:
+-- Table: public.DIVISIONS
+
+-- DROP TABLE IF EXISTS public."DIVISIONS";
+
+CREATE TABLE IF NOT EXISTS public."DIVISIONS"
+(
+    "DIVISION_KEY" bigint NOT NULL,
+    "SEASON_KEY" bigint NOT NULL,
+    "DIVISION_NAME" character varying(50)[] COLLATE pg_catalog."default",
+    "SIZE" smallint,
+    "DIVISION_ID" smallint,
+    "TEAM_KEY" bigint NOT NULL,
+    CONSTRAINT "DIVISIONS_pkey" PRIMARY KEY ("DIVISION_KEY"),
+    CONSTRAINT "DIVISIONS_SEASON_KEY_FKEY" FOREIGN KEY ("SEASON_KEY")
+        REFERENCES public."SEASONS" ("SEASON_KEY") MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT "DIVISIONS_TEAM_KEY_KEY" FOREIGN KEY ("TEAM_KEY")
+        REFERENCES public."TEAMS" ("TEAM_KEY") MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public."DIVISIONS"
+    OWNER to postgres;
+
+
+, CONSTRAINT TEST6_SEASON_KEY_FKEY FOREIGN KEY (SEASON_KEY)
+    REFERENCES TEST6 (SEASON_KEY) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID

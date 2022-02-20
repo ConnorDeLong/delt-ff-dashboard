@@ -2,3 +2,8 @@ ff_venv
 *.pyc
 .DS_Store
 .env
+scratch/
+db_pipeline/DB Tables Draft.xlsx
+db_pipeline/credentials.py
+db_pipeline/scratch/
+__pycahce__/

@@ -138,15 +138,14 @@ def pull_divisions_data(settingsObj):
     
 
 if __name__ == '__main__':
-    check_settings = settingsData(2021, 48347143)
-    print(check_settings.df_divisions)
-    # print(check_settings.df_scoring_periods)
-    print(check_settings.currentMatchupPeriod)
     
-
+    pd.set_option('display.max_columns', 50)
     
-    # league = 24693394
-    # settingsObj= settingsData(2020, league)
-    # df_settings = pull_settings_data(settingsObj)
+    settings = settingsData(2021, 48347143)
+    
+    df_settings = pull_settings_data(settings)
+    df_divisions = pull_divisions_data(settings)
 
-    pass
+    print(df_settings)
+    # print('\n', '\n')
+    # print(df_divisions)

@@ -2,9 +2,9 @@
 # https://opensource.com/article/18/1/step-step-guide-git
 import pandas as pd
 import numpy as np
-import create_team_data
-import create_settings_data
-from pull_api_data import pull_data
+import teams
+import settings
+# from api_data import pull_data
 
 
 def create_matchup_df(matchup_data, playoff_week_start=14):
@@ -234,7 +234,7 @@ def add_standings(matchup_data, week_number, rank_metrics_by_week_range=None):
     return df_matchup_data_stacked
 
 
-def add_all_standings(df_matchup_data, num_weeks_reg_season=13, rank_metrics_by_week_range=None):
+def add_all_standings(df_matchup_data, num_weeks_reg_season=14, rank_metrics_by_week_range=None):
     """ Returns Week/Team level dataframe that includes week level standings """
 
     if rank_metrics_by_week_range is None:
@@ -285,7 +285,7 @@ def add_update_additional_metrics(df_matchup_data):
     return df_matchup_data
 
 
-def create_final_standings(league_id=48347143, year=2020,
+def create_final_standings(matchup_data, playoff_week_start, df_teams,
                            rank_metrics_by_week_range=None, cum_metrics_dict=None):
     """ return standings through all current weeks available and current standings"""
 
@@ -299,22 +299,14 @@ def create_final_standings(league_id=48347143, year=2020,
     if rank_metrics_by_week_range is None:
         rank_metrics_by_week_range = {'1-12': [['cum_total_wins', 'cum_score'], [False, False]]}
 
-    settings_data = create_settings_data.settingsData(year, league_id)
-    playoff_week_start = settings_data.num_reg_season_matchups + 1
-    
     num_weeks_reg_season = playoff_week_start - 1
-
-    matchup_data = pull_data(year, league_id, params=[["view", "mMatchup"], ["view", "mMatchupScore"]])
-
-    df_team_all_seasons = create_team_data.create_team_data()
-    df_team_current_season = df_team_all_seasons.loc[df_team_all_seasons['seasonId'] == year]
 
     df_matchup_data = create_matchup_df(matchup_data, playoff_week_start=playoff_week_start)
     df_expanded_matchup = expand_matchup_data(df_matchup_data)
     df_matchup_data_w_wl = add_win_loss_ind(df_expanded_matchup)
     df_matchup_data_w_all_play = add_all_play(df_matchup_data_w_wl)
     df_matchup_data_w_cum = add_cum_metrics(df_matchup_data_w_all_play, cum_metrics_dict)
-    df_matchup_data_w_team = merge_on_team_data(df_matchup_data_w_cum, df_team_current_season)
+    df_matchup_data_w_team = merge_on_team_data(df_matchup_data_w_cum, df_teams)
     df_updated_matchup_data = add_update_additional_metrics(df_matchup_data_w_team)
     df_final = add_all_standings(df_updated_matchup_data, num_weeks_reg_season=num_weeks_reg_season,
                                  rank_metrics_by_week_range=rank_metrics_by_week_range)
@@ -372,16 +364,46 @@ if __name__ == '__main__':
 
     df_all_standings = create_final_standings(league_id=league_id, year=season_id,
                                               rank_metrics_by_week_range=for_rank_metrics_by_week_range)
-
-    keep_vars = ['week_number', 'full_name', 'standings', 'cum_total_wins', 'score', 'all_play_wins',
-                 'cum_score', 'cum_all_play_wins', 'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']
-
-    df_current_standings = df_all_standings[keep_vars].loc[df_all_standings['week_number'] == choose_week_number]
-
-    # print(df_current_standings)
+    
     print(df_all_standings)
     
-    df_all_standings.to_csv('check_this.csv')
+    
+
+    if cum_metrics_dict is None:
+        cum_metrics_dict = {'score': 'cum_score', 'win_ind': 'cum_wins', 'all_play_wins': 'cum_all_play_wins',
+                            'all_play_losses': 'cum_all_play_losses', 'tie_ind': 'cum_ties', 'loss_ind': 'cum_losses',
+                            'total_wins': 'cum_total_wins', 'all_play_wins_int': 'cum_all_play_wins_int',
+                            'all_play_losses_int': 'cum_all_play_losses_int',
+                            'all_play_ties_int': 'cum_all_play_ties_int', 'score_opp': 'cum_score_opp'}
+
+    if rank_metrics_by_week_range is None:
+        rank_metrics_by_week_range = {'1-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+
+    settings_data = settings.settingsData(year, league_id)
+    playoff_week_start = settings_data.num_reg_season_matchups + 1
+    
+    num_weeks_reg_season = playoff_week_start - 1
+
+    matchup_data = pull_data(year, league_id, params=[["view", "mMatchup"], ["view", "mMatchupScore"]])
+
+    df_team_all_seasons = teams.create_team_data()
+    df_team_current_season = df_teams.loc[df_team_all_seasons['year'] == year]
+    
+    
+    
+    
+    
+    
+
+    # keep_vars = ['week_number', 'full_name', 'standings', 'cum_total_wins', 'score', 'all_play_wins',
+    #              'cum_score', 'cum_all_play_wins', 'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']
+
+    # df_current_standings = df_all_standings[keep_vars].loc[df_all_standings['week_number'] == choose_week_number]
+
+    # print(df_current_standings)
+    # print(df_all_standings)
+    
+    # df_all_standings.to_csv('check_this.csv')
 
     # file_dir = '/home/cdelong/python_projects/ff_web_app/\
     # delt_ff_standings/weekly_standings_csvs/Delt_2020_Week' + str(choose_week_number) + '_Standings.csv'
