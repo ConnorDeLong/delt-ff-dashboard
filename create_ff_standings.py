@@ -44,7 +44,7 @@ def create_matchup_df(matchup_data, playoff_week_start=14):
                                              'teamId_home', 'score_home']
                               )
 
-    df_matchup['week_type'] = ['Regular' if w <= playoff_week_start else 'Playoffs' \
+    df_matchup['week_type'] = ['Regular' if w < playoff_week_start else 'Playoffs' \
                                for w in df_matchup['week_number']]
 
     return df_matchup
@@ -234,29 +234,6 @@ def add_standings(matchup_data, week_number, rank_metrics_by_week_range=None):
     return df_matchup_data_stacked
 
 
-def add_all_standings(df_matchup_data, num_weeks_reg_season=13, rank_metrics_by_week_range=None):
-    """ Returns Week/Team level dataframe that includes week level standings """
-
-    if rank_metrics_by_week_range is None:
-        rank_metrics_by_week_range = {'1-12': [['cum_total_wins', 'cum_score'], [False, False]]}
-
-    df_matchup_data = df_matchup_data.copy()
-
-    columns = list(df_matchup_data.columns)
-    columns.append('standings')
-
-    df_matchup_data_stacked = pd.DataFrame(columns=columns)
-
-    for week_number in range(1, num_weeks_reg_season + 1):
-        df_matchup_data_w_standings = add_standings(df_matchup_data, week_number, rank_metrics_by_week_range)
-
-        df_matchup_data_stacked = df_matchup_data_stacked.append(df_matchup_data_w_standings)
-
-    df_matchup_data_stacked.reset_index(inplace=True, drop=True)
-
-    return df_matchup_data_stacked
-
-
 def add_update_additional_metrics(df_matchup_data):
     """ Returns Week/Team level dataframe with additional metrics specified below added to it """
 
@@ -285,6 +262,34 @@ def add_update_additional_metrics(df_matchup_data):
     return df_matchup_data
 
 
+def add_all_standings(df_matchup_data, rank_metrics_by_week_range=None):
+    """ Returns Week/Team level dataframe that includes week level standings """
+
+    if rank_metrics_by_week_range is None:
+        rank_metrics_by_week_range = {'1-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+
+    df_matchup_data = df_matchup_data.copy()
+    
+    reg_season = df_matchup_data.loc[df_matchup_data['week_type'] == 'Regular']
+    weeks = reg_season[['week_number']].sort_values(by='week_number', inplace=False, ascending=False)
+    num_weeks_reg_season = weeks['week_number'].tolist()[0]
+
+    columns = list(df_matchup_data.columns)
+    columns.append('standings')
+
+    # Shell for stacking
+    df_matchup_data_stacked = pd.DataFrame(columns=columns)
+
+    for week_number in range(1, num_weeks_reg_season + 1):
+        df_matchup_data_w_standings = add_standings(df_matchup_data, week_number, rank_metrics_by_week_range)
+
+        df_matchup_data_stacked = df_matchup_data_stacked.append(df_matchup_data_w_standings)
+
+    df_matchup_data_stacked.reset_index(inplace=True, drop=True)
+
+    return df_matchup_data_stacked
+
+
 def create_final_standings(league_id=48347143, year=2020,
                            rank_metrics_by_week_range=None, cum_metrics_dict=None):
     """ return standings through all current weeks available and current standings"""
@@ -301,8 +306,6 @@ def create_final_standings(league_id=48347143, year=2020,
 
     settings_data = create_settings_data.settingsData(year, league_id)
     playoff_week_start = settings_data.num_reg_season_matchups + 1
-    
-    num_weeks_reg_season = playoff_week_start - 1
 
     matchup_data = pull_data(year, league_id, params=[["view", "mMatchup"], ["view", "mMatchupScore"]])
 
@@ -316,7 +319,7 @@ def create_final_standings(league_id=48347143, year=2020,
     df_matchup_data_w_cum = add_cum_metrics(df_matchup_data_w_all_play, cum_metrics_dict)
     df_matchup_data_w_team = merge_on_team_data(df_matchup_data_w_cum, df_team_current_season)
     df_updated_matchup_data = add_update_additional_metrics(df_matchup_data_w_team)
-    df_final = add_all_standings(df_updated_matchup_data, num_weeks_reg_season=num_weeks_reg_season,
+    df_final = add_all_standings(df_updated_matchup_data, 
                                  rank_metrics_by_week_range=rank_metrics_by_week_range)
 
     return df_final
@@ -372,16 +375,24 @@ if __name__ == '__main__':
 
     df_all_standings = create_final_standings(league_id=league_id, year=season_id,
                                               rank_metrics_by_week_range=for_rank_metrics_by_week_range)
+    print(df_all_standings)
+    # reg_season = df_all_standings.loc[df_all_standings['week_type'] == 'Regular']
+    # weeks = reg_season[['week_number']].sort_values(by='week_number', inplace=False, ascending=False)
+    # check = weeks['week_number'].tolist()
+    # print(check[0])
+    
+    # df_all_standings[['week_type', 'week_number']].sort_values(by=['week_number', 'week_type'], inplace=True, ascending=True)
+    # print(df_all_standings)
 
-    keep_vars = ['week_number', 'full_name', 'standings', 'cum_total_wins', 'score', 'all_play_wins',
-                 'cum_score', 'cum_all_play_wins', 'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']
+    # keep_vars = ['week_number', 'full_name', 'standings', 'cum_total_wins', 'score', 'all_play_wins',
+    #              'cum_score', 'cum_all_play_wins', 'manual_nickname', 'cum_losses', 'cum_ties', 'cum_wins']
 
-    df_current_standings = df_all_standings[keep_vars].loc[df_all_standings['week_number'] == choose_week_number]
+    # df_current_standings = df_all_standings[keep_vars].loc[df_all_standings['week_number'] == choose_week_number]
 
     # print(df_current_standings)
-    print(df_all_standings)
+    # print(df_all_standings)
     
-    df_all_standings.to_csv('check_this.csv')
+    # df_all_standings.to_csv('check_this.csv')
 
     # file_dir = '/home/cdelong/python_projects/ff_web_app/\
     # delt_ff_standings/weekly_standings_csvs/Delt_2020_Week' + str(choose_week_number) + '_Standings.csv'

@@ -22,6 +22,7 @@ class ApiData():
         self.settings = None
         self.divisions = None
         self.teams = None
+        self.weeks = None
         
         self._raw_matchup = None      
         self._raw_settings = None
@@ -83,6 +84,24 @@ class ApiData():
     
         return d
     
+    def pull_all_data(self, clear_json: bool=True) -> None:
+        """ 
+        Updates the attribute associated with every "pull_" method.
+        """
+
+        pull_methods = [attr for attr in dir(self) if attr.startswith('pull')]
+        for pull_method in pull_methods:
+            attr = pull_method[5:]
+            
+            # Prevents "pull_" methods without an attr from running
+            if attr in(dir(self)):
+                getattr(self, pull_method)(return_df=False)
+                
+        if clear_json:
+            self.clear_json_attrs()
+
+        return None
+    
     def pull_standings(self, return_df: bool=True) -> [pd.DataFrame, None]:
         """ 
         Returns a dataframe containing the Team/Week level standings through
@@ -91,6 +110,20 @@ class ApiData():
         
         if self._raw_matchup is None:
             self._raw_matchup = self._pull_raw_matchup()
+            
+        playoff_week_start = self._playoff_week_start()
+        
+        df = standings.pull_standings(self._raw_matchup, playoff_week_start, 
+                                      rank_metrics_by_week_range=self.standings_metrics)
+        df['season_id'] = self.season_id
+        df['league_id'] = self.league_id
+        
+        self.standings = df
+        
+        if return_df == True:
+            return df
+        else:
+            return None
 
     def pull_settings(self, return_df: bool=True) -> [pd.DataFrame, None]:
         """ Returns dataframe containing all relevant data for the settings of a league/year. """
@@ -112,9 +145,7 @@ class ApiData():
         matchup_period_count = schedule_settings['matchupPeriodCount']
         
         # This ensures the playoff_week_start var references the week number (i.e. scoring period)
-        lookup = self.create_scoring_period_lookup()
-        playoff_periods = lookup['scoring_period_id'].loc[lookup['regular_season_ind'] == 0]
-        playoff_week_start = playoff_periods.tolist()[0]
+        playoff_week_start = self._playoff_week_start()
         
         scoring_type = scoring_settings['scoringType']
         
@@ -185,15 +216,18 @@ class ApiData():
         teams = []
         for team in self._raw_teams['teams']:
             team_id = team['id']
-            member_id = team['owners'][0]
+            manager_id = team['owners'][0]
             team_name = team['location'] + ' ' + team['nickname']
             
-            teams.append([team_id, member_id, team_name])
+            teams.append([team_id, manager_id, team_name])
             
-        df = pd.DataFrame(teams, columns=['team_id', 'member_id', 'team_name'])
+        df = pd.DataFrame(teams, columns=['team_id', 'manager_id', 'team_name'])
         
         member_df = self.pull_members()
-        df = pd.merge(df, member_df, on='member_id', how='left')
+        df = pd.merge(df, member_df, on='manager_id', how='left')
+        
+        df['season_id'] = self.season_id
+        df['league_id'] = self.league_id
         
         self.teams = df
         
@@ -214,19 +248,18 @@ class ApiData():
             
         members = []
         for member in self._raw_teams['members']:
-            member_id = member['id']
+            manager_id = member['id']
             espn_name = member['displayName']
-            first_name = member['firstName']
-            last_name = member['lastName']
+            manager_name = member['firstName'] + ' ' + member['lastName']
             
-            members.append([member_id, espn_name, first_name, last_name])
+            members.append([manager_id, espn_name, manager_name])
             
-        cols = ['member_id', 'espn_name', 'first_name', 'last_name']
+        cols = ['manager_id', 'espn_name', 'manager_name']
         df = pd.DataFrame(members, columns=cols)
         
         return df
 
-    def create_scoring_period_lookup(self) -> pd.DataFrame:
+    def pull_weeks(self, return_df: bool=True) -> [pd.DataFrame, None]:
         """ Returns dataframe containing the scoring period mapped to matchup period. """
         
         if self._raw_settings is None:
@@ -247,21 +280,38 @@ class ApiData():
     
                 scoring_pd_list.append([scoring_pd, matchup_pd])
                 
-        columns = ['scoring_period_id', 'matchup_period_id']
+        columns = ['week_number', 'matchup_period']
         df = pd.DataFrame(scoring_pd_list, columns=columns)
         
         week_type_conditions = [
-            (df['matchup_period_id'] <= num_matchups),
-            (df['matchup_period_id'] > num_matchups)
+            (df['matchup_period'] <= num_matchups),
+            (df['matchup_period'] > num_matchups)
         ]
-    
         df['regular_season_ind'] = np.select(week_type_conditions, [1, 0])
-                
+        
+        df['season_id'] = self.season_id
+        df['league_id'] = self.league_id
+        
+        self.weeks = df
+        
+        if return_df == True:
+            return df
+        else:
+            return None
+
         return df
+    
+    def clear_json_attrs(self):
+        ''' 
+        Clears all the atttributes that hold the json data pulled from the API. 
+        '''
+        attrs = [attr for attr in dir(self) if attr.startswith('_raw_')]
+        for attr in attrs:
+            self.__dict__[attr] = None
     
     def _pull_raw_matchup(self) -> list:
         params = [["view", "mMatchup"], ["view", "mMatchupScore"]]
-        return self.pull_data(self.season_id, self.league_id, params=params)
+        return self.pull_api_data(params=params)
     
     def _pull_raw_settings(self) -> list:
         return self.pull_api_data(params=(("view", "mSettings")))
@@ -269,6 +319,13 @@ class ApiData():
     def _pull_raw_teams(self) -> list:
         params = [['view', 'mTeams'], ['view', 'mTeam']]
         return self.pull_api_data(params=params)
+    
+    def _playoff_week_start(self) -> int:
+        lookup = self.pull_weeks()
+        playoff_periods = lookup['week_number'].loc[lookup['regular_season_ind'] == 0]
+        playoff_week_start = playoff_periods.tolist()[0]
+        
+        return playoff_week_start
     
     def _convert_tuple_to_list(self, tuple_var: tuple) -> list:
         """
@@ -307,8 +364,21 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', 50)
     
     espn_data = ApiData(2021, league_id=48347143)
+    espn_data.pull_all_data()
     
-    print(espn_data.pull_teams())
+    print(espn_data.standings)
+    print(espn_data.settings)
+    print(espn_data.teams)
+    print(espn_data.weeks)
+    print(espn_data.divisions)
+    
+    # print(espn_data.pull_standings())
+    # print(espn_data.pull_settings())
+    # print(espn_data.pull_divisions())
+    # print(espn_data.pull_teams())
+    # print(espn_data.pull_teams())
+    
+    # print(espn_data.pull_weeks())
     
     # params = [['view', 'mTeams'], ['view', 'mTeam']]
     # raw_teams = espn_data.pull_api_data(params=params)
@@ -318,11 +388,11 @@ if __name__ == '__main__':
     #     print(team['owners'][0])
     
 
-    # lookup = espn_data.create_scoring_period_lookup()
+    # lookup = espn_data.pull_weeks()
     
     # check = lookup{}
     
-    # print(lookup['scoring_period_id'].loc[lookup['matchup_period_id'] == 14].tolist())
+    # print(lookup['week_number'].loc[lookup['matchup_period'] == 14].tolist())
     
     # settings_df = espn_data.pull_settings(return_df=True)
     # print(settings_df) 
