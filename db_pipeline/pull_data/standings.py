@@ -364,6 +364,3 @@ def pull_standings(matchup_data, playoff_week_start, rank_metrics_by_week_range=
     df_final.rename(columns=rename_vars, inplace=True)
 
     return df_final
-
-if __name__ == '__main__':
-    pass

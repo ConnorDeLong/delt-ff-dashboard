@@ -59,6 +59,3 @@ if __name__ == '__main__':
     # load_table(conn, espn_data.weeks, 'weeks', weeks_keys)
     # load_table(conn, espn_data.divisions, 'divisions', divisions_keys)
     # load_table(conn, espn_data.settings, 'settings', settings_keys)
-    
-   
-

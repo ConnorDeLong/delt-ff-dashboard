@@ -213,27 +213,3 @@ if __name__ == '__main__':
     create_table_settings(conn, overwrite=True)
     
     conn.close()
-
-
-    ####################################################
-    ################## SCRATCH #########################
-    ####################################################
-    # select_statement = '''
-    # SELECT *
-    # FROM SEASONS;
-    # '''
-    
-    # conn = create_db_connection(connect_params=CONNECT_PARAMS)
-    
-    # cursor = conn.cursor()
-    # cursor.execute(select_statement)
-    
-    # check = cursor.fetchall()
-    # print(check)
-    
-    # cursor.close()
-    # conn.close()
-
-
-
-

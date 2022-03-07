@@ -1,11 +1,11 @@
 import psycopg2
 import pandas as pd
-from globals import CONNECT_PARAMS
+from configs import connection_params
 
 
 def create_db_connection(connect_params: dict=None) -> psycopg2.connect:
     if connect_params is None:
-        connect_params = CONNECT_PARAMS
+        connect_params = connection_params(connect_type='heroku')
     
     conn = psycopg2.connect(user=connect_params['user'],
                             password=connect_params['password'],
@@ -140,16 +140,3 @@ def _create_update_set_statement(cols: list) -> str:
         base_str = base_str + set_col
         
     return base_str
-
-
-if __name__ == '__main__':
-    
-    PORT = '5432'
-    HOST = 'ec2-44-194-113-156.compute-1.amazonaws.com'
-    DB_NAME = 'd9tktipamnn3o6'
-    PASSWORD = '3d70ed5b99fe3c98f92c86a1ff0f2ef716f53c5875eb5511b124dbbf501225db'
-
-    PARAMS = {'user': 'wyjviavuvevhib', 'password': PASSWORD,
-                  'host': HOST, 'port': PORT, 'database': DB_NAME}
-    
-    conn = create_db_connection(connect_params=PARAMS)

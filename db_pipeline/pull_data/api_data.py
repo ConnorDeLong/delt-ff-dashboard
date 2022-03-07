@@ -378,10 +378,4 @@ if __name__ == '__main__':
     # print(espn_data.teams)
     # print(espn_data.weeks)
     # print(espn_data.divisions)
-    
-    print(espn_data.scores)
-    
-    for col in espn_data.scores.columns:
-        print(col)
-    
-    # espn_data.pull_standings(return_df=False)    
+  
