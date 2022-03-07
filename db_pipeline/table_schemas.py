@@ -1,26 +1,14 @@
 
 import psycopg2
-from credentials import USER, PASSWORD
 
-CONNECT_PARAMS = {'user': USER, 'password': PASSWORD,
-                  'host': '127.0.0.1', 'port': '5432', 'database': 'Delt_FF_DB'}
-
-def create_db_connection(connect_params: dict=None) -> psycopg2.connect:
-    if connect_params is None:
-        connect_params = CONNECT_PARAMS
-    
-    conn = psycopg2.connect(user=connect_params['user'],
-                            password=connect_params['password'],
-                            host=connect_params['host'],
-                            port=connect_params['port'],
-                            database=connect_params['database']
-                            )
-    
-    return conn
+from helpers import create_db_connection
+from configs import connection_params
 
 
-def create_table_weekly_scores(conn: psycopg2.connect, overwrite: bool=False, table_name: str='WEEKLY_SCORES') -> None:
+def create_table_scores(conn: psycopg2.connect, overwrite: bool=False) -> None:
     ''' Creates the columns and relationships of the WEEKLY_SCORES table '''
+    
+    table_name = 'SCORES'
     
     if overwrite == True:
         drop_table_statement = f'''DROP TABLE IF EXISTS {table_name};'''
@@ -32,7 +20,8 @@ def create_table_weekly_scores(conn: psycopg2.connect, overwrite: bool=False, ta
         
         CREATE TABLE {table_name}
         (
-            YEAR SMALLINT
+            LEAGUE_ID BIGINT
+            , SEASON_ID SMALLINT
             , WEEK_NUMBER BIGINT
             , TEAM_ID SMALLINT
             , TEAM_ID_OPP SMALLINT
@@ -58,12 +47,13 @@ def create_table_weekly_scores(conn: psycopg2.connect, overwrite: bool=False, ta
             , CUM_ALL_PLAY_TIES SMALLINT
             , CUM_SCORE_PER_WEEK NUMERIC(5, 2)
             , CUM_SCORE_OPP_PER_WEEK NUMERIC(5, 2)
-            , CUM_ALL_PLAY_WLT_POINTS_PER_WEEK NUMERIC(3, 2)
+            , CUM_ALL_PLAY_WLT_POINTS_PER_WEEK NUMERIC(3, 1)
             , RECORD VARCHAR(10)
             , ALL_PLAY_RECORD VARCHAR(10)
             , STANDINGS SMALLINT
             , HOME_OR_AWAY VARCHAR(10)
-            , CONSTRAINT WEEKLY_SCORES_PKEY PRIMARY KEY(YEAR, TEAM_ID, WEEK_NUMBER)
+            
+            , CONSTRAINT WEEKLY_SCORES_PKEY PRIMARY KEY(LEAGUE_ID, SEASON_ID, WEEK_NUMBER, TEAM_ID)
         );
         '''
 
@@ -74,9 +64,11 @@ def create_table_weekly_scores(conn: psycopg2.connect, overwrite: bool=False, ta
     cursor.close()
     
     
-def create_table_teams(conn: psycopg2.connect, overwrite: bool=False, table_name: str='TEAMS') -> None:
+def create_table_teams(conn: psycopg2.connect, overwrite: bool=False) -> None:
     ''' Creates the columns and relationships of the TEAMS table '''
     
+    table_name = 'TEAMS'
+    
     if overwrite == True:
         drop_table_statement = f'''DROP TABLE IF EXISTS {table_name};'''
     else:
@@ -87,11 +79,15 @@ def create_table_teams(conn: psycopg2.connect, overwrite: bool=False, table_name
         
         CREATE TABLE {table_name}
         (
-            TEAM_ID SMALLINT
-            , YEAR SMALLINT
+            LEAGUE_ID BIGINT
+            , SEASON_ID SMALLINT
+            , TEAM_ID SMALLINT
+            , MANAGER_ID VARCHAR(50)
+            , TEAM_NAME VARCHAR(50)
             , MANAGER_NAME VARCHAR(50)
-            , MANAGER_NICKNAME VARCHAR(50)
-            , CONSTRAINT TEAMS_PKEY PRIMARY KEY(YEAR, TEAM_ID)
+            , ESPN_NAME VARCHAR(50)
+
+            , CONSTRAINT TEAMS_PKEY PRIMARY KEY(LEAGUE_ID, SEASON_ID, TEAM_ID)
         );
         '''
 
@@ -102,9 +98,11 @@ def create_table_teams(conn: psycopg2.connect, overwrite: bool=False, table_name
     cursor.close()
     
     
-def create_table_weeks(conn: psycopg2.connect, overwrite: bool=False, table_name: str='WEEKS') -> None:
+def create_table_weeks(conn: psycopg2.connect, overwrite: bool=False) -> None:
     ''' Creates the columns and relationships of the WEEKS table '''
     
+    table_name = 'WEEKS'
+    
     if overwrite == True:
         drop_table_statement = f'''DROP TABLE IF EXISTS {table_name};'''
     else:
@@ -115,11 +113,13 @@ def create_table_weeks(conn: psycopg2.connect, overwrite: bool=False, table_name
         
         CREATE TABLE {table_name}
         (
-            YEAR SMALLINT
+            LEAGUE_ID BIGINT
+            , SEASON_ID SMALLINT
             , WEEK_NUMBER SMALLINT
             , MATCHUP_PERIOD SMALLINT
-            , WEEK_TYPE VARCHAR(25)
-            , CONSTRAINT WEEKS_PKEY PRIMARY KEY(YEAR, WEEK_NUMBER)
+            , REG_SEASON_FLAG SMALLINT
+
+            , CONSTRAINT WEEKS_PKEY PRIMARY KEY(LEAGUE_ID, SEASON_ID, WEEK_NUMBER)
         );
         '''
 
@@ -130,9 +130,11 @@ def create_table_weeks(conn: psycopg2.connect, overwrite: bool=False, table_name
     cursor.close()
     
     
-def create_table_divisions(conn: psycopg2.connect, overwrite: bool=False, table_name: str='DIVISIONS') -> None:
+def create_table_divisions(conn: psycopg2.connect, overwrite: bool=False) -> None:
     ''' Creates the columns and relationships of the DIVISIONS table '''
     
+    table_name = 'DIVISIONS'
+    
     if overwrite == True:
         drop_table_statement = f'''DROP TABLE IF EXISTS {table_name};'''
     else:
@@ -143,11 +145,13 @@ def create_table_divisions(conn: psycopg2.connect, overwrite: bool=False, table_
         
         CREATE TABLE {table_name}
         (
-            YEAR SMALLINT
-            , DIVISION_ID SMALLINT            
+            LEAGUE_ID BIGINT
+            , SEASON_ID SMALLINT
             , DIVISION_NAME VARCHAR(50)
             , SIZE SMALLINT
-            , CONSTRAINT DIVISIONS_PKEY PRIMARY KEY(YEAR, DIVISION_ID)
+            , DIVISION_ID SMALLINT
+
+            , CONSTRAINT DIVISIONS_PKEY PRIMARY KEY(LEAGUE_ID, SEASON_ID, DIVISION_ID)
         );
         '''
 
@@ -158,8 +162,10 @@ def create_table_divisions(conn: psycopg2.connect, overwrite: bool=False, table_
     cursor.close()
     
     
-def create_table_settings(conn: psycopg2.connect, overwrite: bool=False, table_name: str='SETTINGS') -> None:
+def create_table_settings(conn: psycopg2.connect, overwrite: bool=False) -> None:
     ''' Creates the columns and relationships of the SETTINGS table '''
+    
+    table_name = 'SETTINGS'
     
     if overwrite == True:
         drop_table_statement = f'''DROP TABLE IF EXISTS {table_name};'''
@@ -171,7 +177,8 @@ def create_table_settings(conn: psycopg2.connect, overwrite: bool=False, table_n
         
         CREATE TABLE {table_name}
         (
-            YEAR SMALLINT
+            LEAGUE_ID BIGINT
+            , SEASON_ID SMALLINT
             , PLAYOFF_SEEDING_RULE VARCHAR(100)
             , PLAYOFF_SEEDING_RULE_BY SMALLINT
             , NUM_PLAYOFF_TEAMS SMALLINT
@@ -182,7 +189,8 @@ def create_table_settings(conn: psycopg2.connect, overwrite: bool=False, table_n
             , REG_SEASON_MATCHUP_TIEBREAKER VARCHAR(50)
             , PLAYOFF_MATCHUP_TIEBREAKER VARCHAR(50)
             , HOME_TEAM_BONUS SMALLINT
-            , CONSTRAINT SETTINGS_PKEY PRIMARY KEY(YEAR)
+
+            , CONSTRAINT SETTINGS_PKEY PRIMARY KEY(LEAGUE_ID, SEASON_ID)
         );
         '''
 
@@ -195,12 +203,10 @@ def create_table_settings(conn: psycopg2.connect, overwrite: bool=False, table_n
 
 if __name__ == '__main__':
     
-    CONNECT_PARAMS = {'user': 'postgres', 'password': 'pencil11',
-                      'host': '127.0.0.1', 'port': '5432', 'database': 'Delt_FF_DB'}
+    connect_params = connection_params(connect_type='heroku')
+    conn = create_db_connection(connect_params=connect_params)
     
-    conn = create_db_connection(connect_params=CONNECT_PARAMS)
-    
-    create_table_weekly_scores(conn, overwrite=True)
+    create_table_scores(conn, overwrite=True)
     create_table_teams(conn, overwrite=True)
     create_table_weeks(conn, overwrite=True)
     create_table_divisions(conn, overwrite=True)

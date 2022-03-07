@@ -7,7 +7,7 @@ import standings
 
 class ApiData():
     
-    def __init__(self, season_id: int, standings_metrics: dict=None, league_id: int=48347143) -> None:
+    def __init__(self, season_id: int, standings_metrics: dict=None, league_id: int=48347143):
         self.season_id = season_id
         self.league_id = league_id
         
@@ -18,7 +18,7 @@ class ApiData():
         else:
             self.standings_metrics = standings_metrics
             
-        self.standings = None
+        self.scores = None
         self.settings = None
         self.divisions = None
         self.teams = None
@@ -102,7 +102,7 @@ class ApiData():
 
         return None
     
-    def pull_standings(self, return_df: bool=True) -> [pd.DataFrame, None]:
+    def pull_scores(self, return_df: bool=True) -> [pd.DataFrame, None]:
         """ 
         Returns a dataframe containing the Team/Week level standings through
         the current week.
@@ -118,7 +118,7 @@ class ApiData():
         df['season_id'] = self.season_id
         df['league_id'] = self.league_id
         
-        self.standings = df
+        self.scores = df
         
         if return_df == True:
             return df
@@ -210,6 +210,7 @@ class ApiData():
         Note that a team can be owned by multiple members - This will member
         attributes for the first one associated with the team.
         """
+        
         if self._raw_teams is None:
             self._raw_teams = self._pull_raw_teams()
             
@@ -217,7 +218,11 @@ class ApiData():
         for team in self._raw_teams['teams']:
             team_id = team['id']
             manager_id = team['owners'][0]
-            team_name = team['location'] + ' ' + team['nickname']
+            team_name = team['location'].strip() + ' ' + team['nickname'].strip()
+            
+            # Single quotes in the name are causing db load issue
+            team_name = team_name.replace("'", "")
+            team_name = team_name.strip()
             
             teams.append([team_id, manager_id, team_name])
             
@@ -287,7 +292,7 @@ class ApiData():
             (df['matchup_period'] <= num_matchups),
             (df['matchup_period'] > num_matchups)
         ]
-        df['regular_season_ind'] = np.select(week_type_conditions, [1, 0])
+        df['reg_season_flag'] = np.select(week_type_conditions, [1, 0])
         
         df['season_id'] = self.season_id
         df['league_id'] = self.league_id
@@ -305,6 +310,7 @@ class ApiData():
         ''' 
         Clears all the atttributes that hold the json data pulled from the API. 
         '''
+        
         attrs = [attr for attr in dir(self) if attr.startswith('_raw_')]
         for attr in attrs:
             self.__dict__[attr] = None
@@ -322,7 +328,7 @@ class ApiData():
     
     def _playoff_week_start(self) -> int:
         lookup = self.pull_weeks()
-        playoff_periods = lookup['week_number'].loc[lookup['regular_season_ind'] == 0]
+        playoff_periods = lookup['week_number'].loc[lookup['reg_season_flag'] == 0]
         playoff_week_start = playoff_periods.tolist()[0]
         
         return playoff_week_start
@@ -363,51 +369,19 @@ class ApiData():
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 50)
     
-    espn_data = ApiData(2021, league_id=48347143)
-    espn_data.pull_all_data()
+    espn_data = ApiData(2020, league_id=48347143)
+    # espn_data.pull_all_data()
+    espn_data.pull_scores(return_df=False)
     
-    print(espn_data.standings)
-    print(espn_data.settings)
-    print(espn_data.teams)
-    print(espn_data.weeks)
-    print(espn_data.divisions)
+    # print(espn_data.scores)
+    # print(espn_data.settings)
+    # print(espn_data.teams)
+    # print(espn_data.weeks)
+    # print(espn_data.divisions)
     
-    # print(espn_data.pull_standings())
-    # print(espn_data.pull_settings())
-    # print(espn_data.pull_divisions())
-    # print(espn_data.pull_teams())
-    # print(espn_data.pull_teams())
+    print(espn_data.scores)
     
-    # print(espn_data.pull_weeks())
+    for col in espn_data.scores.columns:
+        print(col)
     
-    # params = [['view', 'mTeams'], ['view', 'mTeam']]
-    # raw_teams = espn_data.pull_api_data(params=params)
-    # print(raw_teams['teams'])
-    
-    # for team in raw_teams['teams']:
-    #     print(team['owners'][0])
-    
-
-    # lookup = espn_data.pull_weeks()
-    
-    # check = lookup{}
-    
-    # print(lookup['week_number'].loc[lookup['matchup_period'] == 14].tolist())
-    
-    # settings_df = espn_data.pull_settings(return_df=True)
-    # print(settings_df) 
-    # print(espn_data._raw_settings['settings']['scheduleSettings'])
-    
-    # check = espn_data._raw_settings['settings']['scheduleSettings']['matchupPeriodCount']
-    # print(check)
-    
-    # matchup_period_count = settings_df['matchup_period_count'].values.tolist()
-    # print(matchup_period_count)
-    
-    # print(settings_df)
-    
-    # check = settings.pull_settings(settings_dict, 48347143, 2021)
-    # check = settings.pull_divisions(settings_dict, 48347143, 2021)
-    # print(check)
-    
-    
+    # espn_data.pull_standings(return_df=False)    

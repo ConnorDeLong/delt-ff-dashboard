@@ -5,6 +5,37 @@ import numpy as np
 # from api_data import pull_data
 
 
+def survivor_challenge(df_matchup_data, week_number):
+    """
+    Returns a DataFrame containing the remaining teams left in the survivor challenge through
+    week specified by the "week_number" param and the loser of that week
+
+    NOTE: CURRENTLY RETURNS AN ERROR IF THE WEEK_NUMBER IS AFTER THE CONTEST HAS ENDED
+    """
+    df_matchup_data = df_matchup_data.copy()
+
+    df_remaining_teams = df_matchup_data.groupby(['full_name'], as_index=False).size()
+    df_remaining_teams = df_remaining_teams['full_name']
+
+    survivor_losers = []
+
+    for week in range(1, week_number + 1):
+        df_matchup_data_week = df_matchup_data.loc[df_matchup_data['week_number'] == week].copy()
+
+        df_matchup_data_week = pd.merge(df_remaining_teams, df_matchup_data_week, on=['full_name'], how='left')
+
+        df_matchup_data_week.sort_values(by=['score', 'cum_score'], inplace=True, ascending=True)
+
+        survivor_loser = df_matchup_data_week.iloc[0]
+        survivor_loser = survivor_loser['full_name']
+        
+        survivor_losers.append(survivor_loser)
+
+        df_remaining_teams = df_remaining_teams.loc[df_remaining_teams != survivor_loser]
+
+    return df_remaining_teams, survivor_losers
+
+
 def create_matchup_df(matchup_data, playoff_week_start=14):
     """
     Returns a week/matchup level dataframe containing the total scores of each team
@@ -308,40 +339,31 @@ def pull_standings(matchup_data, playoff_week_start, rank_metrics_by_week_range=
     df_updated_matchup_data = add_update_additional_metrics(df_matchup_data_w_cum)
     df_final = add_all_standings(df_updated_matchup_data,
                                  rank_metrics_by_week_range=rank_metrics_by_week_range)
+    
+    # This needs done first in order to retain these vars 
+    rename_vars = {'all_play_wins': 'all_play_wlt_points'
+                   , 'cum_all_play_wins': 'cum_all_play_wlt_points'}
+    df_final.rename(columns=rename_vars, inplace=True)
+    
+    # These conflict with other vars that need renamed for the DB
+    df_final.drop(['all_play_losses' ,'cum_all_play_losses'], axis=1, inplace=True)
+    
+    rename_vars = {
+    'total_wins': 'wlt_points',  
+    'all_play_wins_int': 'all_play_wins', 
+    'all_play_losses_int': 'all_play_losses', 
+    'all_play_ties_int': 'all_play_ties', 
+    'cum_total_wins': 'cum_wlt_points', 
+    'cum_all_play_wins_int': 'cum_all_play_wins', 
+    'cum_all_play_losses_int': 'cum_all_play_losses', 
+    'cum_all_play_ties_int': 'cum_all_play_ties', 
+    'cum_all_play_wins_per_week': 'cum_all_play_wlt_points_per_week', 
+    'cum_wlt': 'record', 
+    'cum_all_play_wlt_int': 'all_play_record'
+    }
+    df_final.rename(columns=rename_vars, inplace=True)
 
     return df_final
-
-
-def survivor_challenge(df_matchup_data, week_number):
-    """
-    Returns a DataFrame containing the remaining teams left in the survivor challenge through
-    week specified by the "week_number" param and the loser of that week
-
-    NOTE: CURRENTLY RETURNS AN ERROR IF THE WEEK_NUMBER IS AFTER THE CONTEST HAS ENDED
-    """
-    df_matchup_data = df_matchup_data.copy()
-
-    df_remaining_teams = df_matchup_data.groupby(['full_name'], as_index=False).size()
-    df_remaining_teams = df_remaining_teams['full_name']
-
-    survivor_losers = []
-
-    for week in range(1, week_number + 1):
-        df_matchup_data_week = df_matchup_data.loc[df_matchup_data['week_number'] == week].copy()
-
-        df_matchup_data_week = pd.merge(df_remaining_teams, df_matchup_data_week, on=['full_name'], how='left')
-
-        df_matchup_data_week.sort_values(by=['score', 'cum_score'], inplace=True, ascending=True)
-
-        survivor_loser = df_matchup_data_week.iloc[0]
-        survivor_loser = survivor_loser['full_name']
-        
-        survivor_losers.append(survivor_loser)
-
-        df_remaining_teams = df_remaining_teams.loc[df_remaining_teams != survivor_loser]
-
-    return df_remaining_teams, survivor_losers
-
 
 if __name__ == '__main__':
     pass

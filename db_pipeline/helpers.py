@@ -1,11 +1,6 @@
-"""
-Loads data into the tables that need updated once a season
-"""
-
 import psycopg2
 import pandas as pd
-import pull_data
-from credentials import USER, PASSWORD
+from globals import CONNECT_PARAMS
 
 
 def create_db_connection(connect_params: dict=None) -> psycopg2.connect:
@@ -20,6 +15,36 @@ def create_db_connection(connect_params: dict=None) -> psycopg2.connect:
                             )
     
     return conn
+
+
+def table_columns(conn: psycopg2.connect, table: str) -> tuple:
+    """ Pulls all columns in a table """
+    
+    table = table.lower()
+    query = f'''
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = 'public'
+            AND TABLE_NAME = '{table}'
+    '''
+    
+    cursor = conn.cursor()
+    try:
+        cursor.execute(query)
+        
+        cols = cursor.fetchall()
+        cols = [col[0] for col in cols]
+        
+        cursor.close()
+        
+        return cols
+        
+    except (Exception, psycopg2.DatabaseError) as error:
+        print("Error: %s" % error)
+        conn.rollback()
+        cursor.close()
+        
+        return 1
 
 
 def drop_rows(conn: psycopg2.connect, table: str, where_condition: str) -> None:
@@ -44,6 +69,7 @@ def drop_rows(conn: psycopg2.connect, table: str, where_condition: str) -> None:
 
 def insert_rows(conn: psycopg2.connect, df: pd.DataFrame, table: str) -> None:
     ''' Inserts the df values into the DB table '''
+    
     # Create a list of tupples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
     tuples_str = ', '.join(map(str, tuples))
@@ -64,23 +90,6 @@ def insert_rows(conn: psycopg2.connect, df: pd.DataFrame, table: str) -> None:
         cursor.close()
         return 1
     cursor.close()
-    
-    
-def _create_update_set_statement(cols: list) -> str:
-    ''' 
-    Creates the "do update set" statement used for upsert.
-    '''
-    base_str ='DO UPDATE SET '
-    for i, col in enumerate(cols):
-        seperator = ', '
-        if i == 0:
-            seperator = ''
-            
-        set_col = seperator + col + ' = EXCLUDED.' + col
-    
-        base_str = base_str + set_col
-        
-    return base_str
 
 
 def upsert_rows(conn: psycopg2.connect, df: pd.DataFrame, table: str, pkeys: list) -> None:
@@ -88,6 +97,7 @@ def upsert_rows(conn: psycopg2.connect, df: pd.DataFrame, table: str, pkeys: lis
     Using cursor.mogrify() to build the bulk insert query
     then cursor.execute() to execute the query
     """
+    
     # Create a list of tupples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
     tuples_str = ', '.join(map(str, tuples))
@@ -114,31 +124,32 @@ def upsert_rows(conn: psycopg2.connect, df: pd.DataFrame, table: str, pkeys: lis
     cursor.close()
 
 
-def load_teams(conn: psycopg2.connect, years: list, table: str='TEAMS', pkeys: list=['year', 'team_id']) -> None:
-    ''' Loads the TEAMS table '''
-    df_team = pull_data.create_team_data()
+def _create_update_set_statement(cols: list) -> str:
+    ''' 
+    Creates the "do update set" statement used for upsert.
+    '''
     
-    filter_years = df_team['year'].isin(years)
-    df_team = df_team[filter_years]
+    base_str ='DO UPDATE SET '
+    for i, col in enumerate(cols):
+        seperator = ', '
+        if i == 0:
+            seperator = ''
+            
+        set_col = seperator + col + ' = EXCLUDED.' + col
     
-    rename_cols = {'teamId': 'team_id', 'full_name': 'manager_name', 'manual_nickname': 'manager_nickname'}
-    df_team.rename(columns=rename_cols, inplace=True)
-    
-    upsert_rows(conn, df_team, table, pkeys)
+        base_str = base_str + set_col
+        
+    return base_str
 
 
 if __name__ == '__main__':
     
-    from create_table_schemas import create_table_teams
-    
-    CONNECT_PARAMS = {'user': USER, 'password': PASSWORD,
-                      'host': '127.0.0.1', 'port': '5432', 'database': 'Delt_FF_DB'}
-    
-    conn = create_db_connection()
-    
-    ####################################################
-    ################## UPSERT TABLES ###################
-    ####################################################
-    load_teams(conn, [2019, 2020, 2021])
-   
+    PORT = '5432'
+    HOST = 'ec2-44-194-113-156.compute-1.amazonaws.com'
+    DB_NAME = 'd9tktipamnn3o6'
+    PASSWORD = '3d70ed5b99fe3c98f92c86a1ff0f2ef716f53c5875eb5511b124dbbf501225db'
 
+    PARAMS = {'user': 'wyjviavuvevhib', 'password': PASSWORD,
+                  'host': HOST, 'port': PORT, 'database': DB_NAME}
+    
+    conn = create_db_connection(connect_params=PARAMS)
