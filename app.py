@@ -11,11 +11,11 @@ from dash.dependencies import Input, Output, State
 # import dash_bootstrap_components as dbc
 
 LEAGUE_ID = 48347143
-SEASON_ID = 2021
+SEASON_ID = 2022
 
 for_rank_metrics_by_week_range = {'1-4': [['cum_total_wins', 'cum_score'], [False, False]],
                                   '5-6': [['cum_all_play_wins', 'cum_score'], [False, False]],
-                                  '7-12': [['cum_total_wins', 'cum_score'], [False, False]]}
+                                  '7-10': [['cum_total_wins', 'cum_score'], [False, False]]}
 
 df_standings = create_ff_standings.create_final_standings(rank_metrics_by_week_range=for_rank_metrics_by_week_range, 
                                                           league_id=LEAGUE_ID, year=SEASON_ID)
